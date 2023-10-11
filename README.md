@@ -1,5 +1,10 @@
-# jlp - C++ based log parser for Jenkins Logs
-## Jenkins Log Parser
+# jlp - C++ based log parser for Java Logs
+## Java Log Parser
+
+### By Default starting with Jenkins typical Log File Formats as this is what this solution stems from: 
+###     Need to parse and objectify Java Logs from a JVM, Log4J is used in Jenkins;
+###     Thus this will default compatible with that typical and most commonly used logging format; 
+###     TODO: Set a Logging format for CD/RO; 
 
 ### Log Format Object: 
 n: date  time  id logLevel  method  [trace|message]

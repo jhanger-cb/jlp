@@ -6,41 +6,60 @@
 #include <string>
 #include <vector>
 #include <regex>
+#include <ctime>
 
 // Custom Inclusions: 
-#include "jlp.h"
+#include "jlp.h"        // Class Defs;
+#include "clip.h"       // Command Line Parsing; 
 
 // Namespacing: 
 using namespace std;
 
-
-int main()
+int main(int argc, char * argv[])
 {
-  /* Read line into vector instead of printing out directly*/
+    /* Read line into vector instead of printing out directly*/
     vector<string> lines;
+    struct tm t;
+    t = {0};
 
-    ifstream file_in("jenkins.log");
-    if (!file_in) {/*error*/}
-
-    string line;
-    while (getline(file_in, line))
+    if(cmdOptionExists(argv, argv+argc, "-h"))
     {
-        istringstream ss(line);
-        lines.push_back(line);
+        // Print Help Documentation; 
     }
 
-    for ( long unsigned int i=0; i< lines.size(); i++) {
-      //cout << lines[i] << endl;
-      string word;
-      istringstream iss(lines[i]);
+    char * filename = getCmdOption(argv, argv + argc, "-f");
 
-      while (getline(iss, word, ' ')) {
-        regex e ("^[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]");
-        regex a ("\tat");
-        if (regex_match(word, e) || regex_match(word, a)) {
-          cout << endl; 
+    if (filename)
+    {
+        ifstream file_in(filename);
+        if (!file_in) {/*error*/}
+
+        string line;
+        while (getline(file_in, line))
+        {
+            struct tm tm; 
+            string firstWord, ln; 
+            istringstream ss(line);
+            ss >> firstWord; 
+            if (strptime(firstWord.c_str(), "%Y-%m-%d", &tm)) {
+              cout << "This is a head JVM Logging Event: " << endl;
+              getline(ss, ln);
+              cout << firstWord << ln << endl;
+            } else if(firstWord.find("at")) {
+              cout << "This line begins a stack trace: " << endl;
+              getline(ss, ln);
+              cout << firstWord << ln << endl;
+            } else if(!firstWord.find("\n")) {
+              cout << "New Line Detected: End of Stack Trace" << firstWord << endl;
+            } else {
+              getline(ss, ln);
+              cout << "\t" << firstWord << ln << endl;
+            }
+            lines.push_back(line);
         }
-        cout << word << " ";
-      }
+
+        for ( long unsigned int i=0; i< lines.size(); i++) {
+          //cout << lines[i] << endl;
+        }
     }
 }
