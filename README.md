@@ -22,4 +22,3 @@ filename(s)
 ### Methods: 
 * Read Line
 * isEndOfObject (readLine(++iter))
-

@@ -32,10 +32,34 @@ private:
 public:
     javaLogParser (string fileName) {
         this->fh = ifstream(fileName);
+        if (!fh) { cout << "Error in File" << endl; return 0; }
+        
+        // Load File into this->lines;
+        while (getline(this->fh, this->line)){
+            struct tm tm; 
+            string firstWord, ln; 
+            istringstream ss(this->line);
+            ss >> firstWord; 
+            if (strptime(firstWord.c_str(), "%Y-%m-%d", &tm)) {
+              cout << "This is a head JVM Logging Event: " << endl;
+              getline(ss, ln);
+              cout << firstWord << ln << endl;
+            } else if(firstWord.find("at")) {
+              cout << "This line begins a stack trace: " << endl;
+              getline(ss, ln);
+              cout << firstWord << ln << endl;
+            } else if(!firstWord.find("\n")) {
+              cout << "New Line Detected: End of Stack Trace" << firstWord << endl;
+            } else {
+              getline(ss, ln);
+              cout << "\t" << firstWord << ln << endl;
+            }
+            lines.push_back(line);
+        }
     }
 
     ~javaLogParser () {
-
+        this->fh.close();
     }
 
     vector<string> getLines() const {
