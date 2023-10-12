@@ -20,7 +20,7 @@ int main(int argc, char * argv[])
     /* Read line into vector instead of printing out directly*/
     vector<string> lines;
 
-    if(cmdOptionExists(argv, argv+argc, "-h") || !cmdOptionExists(argv, argv+argc, "-")) {
+    if(cmdOptionExists(argv, argv+argc, "-h") || cmdOptionExists(argv, argv+argc, " ")) {
         cout << "Usage: jlp -f [FILE(S)]\n\
   Parse and Aggregate JVM Log File Events\n\
   -f  <filename(s)>\n" << endl;
@@ -30,6 +30,10 @@ int main(int argc, char * argv[])
 
     if (filename) {
         javaLogParser jlp = javaLogParser(filename);
+        jlp.dump();
+    }
+    else {
+      cout << "Error Loading File" << endl; 
     }
 
 }

@@ -16,12 +16,12 @@ using namespace std;
 class javaLogParser {
 private:
     int lineCount; 
-    string fileName;
+    string fileName, line;
     ifstream fh;
+    ifstream fileStream;    // May remove;    
+    istringstream ss;
     vector<string> lines; 
     vector<string>::const_iterator iter;
-    string line; 
-    ifstream fileStream;
 
     /* Log File Fields*/
     string timestamp; 
@@ -31,30 +31,22 @@ private:
 
 public:
     javaLogParser (string fileName) {
+        string firstWord; 
         this->fh = ifstream(fileName);
-        if (!fh) { cout << "Error in File" << endl; return 0; }
-        
+        if (!fh) { cout << "Error in File" << endl; }
+
         // Load File into this->lines;
         while (getline(this->fh, this->line)){
-            struct tm tm; 
-            string firstWord, ln; 
-            istringstream ss(this->line);
-            ss >> firstWord; 
-            if (strptime(firstWord.c_str(), "%Y-%m-%d", &tm)) {
-              cout << "This is a head JVM Logging Event: " << endl;
-              getline(ss, ln);
-              cout << firstWord << ln << endl;
-            } else if(firstWord.find("at")) {
-              cout << "This line begins a stack trace: " << endl;
-              getline(ss, ln);
-              cout << firstWord << ln << endl;
-            } else if(!firstWord.find("\n")) {
-              cout << "New Line Detected: End of Stack Trace" << firstWord << endl;
-            } else {
-              getline(ss, ln);
-              cout << "\t" << firstWord << ln << endl;
+            this->ss = istringstream(this->line);
+            this->ss >> firstWord; 
+            if (this->isStackTrace(firstWord)) {
+                //cout << "This line is a part of a Stack Trace" << endl;
+            }
+            else {
+                //cout << "This line is NOT part of a Stack Trace" << endl;
             }
             lines.push_back(line);
+            this->lineCount++;
         }
     }
 
@@ -73,5 +65,25 @@ public:
         this->fileStream.seekg(curPos, ios_base::beg);
 
         return localLine;
+    }
+
+    bool isStackTrace (string firstWord) {
+            string ln; 
+            struct tm tm; 
+
+            if (strptime(firstWord.c_str(), "%Y-%m-%d", &tm)) {
+              getline(ss, ln);
+              return false;
+              // cout << firstWord << ln /*<< "\t\t // This is a head JVM Logging Event " */<< endl;
+            } else {
+              getline(ss, ln);
+              return true; 
+              // cout << firstWord << ln << endl;
+            }
+    }
+    void dump (){
+        for ( long unsigned int i=0; i< this->lines.size(); i++) {
+          cout << lines[i] << endl;
+        }
     }
 };
