@@ -2,16 +2,25 @@ using namespace std;
 
 class javaLogEntry {
 private:
-    enum lineType { SINGLE, MULTI }; 
-    lineType lte; 
+    bool lineType;
+    int lineCount;
+    vector<string> lines;
     string line;
 
 public:
-    lineType getLineType () const {
-        return lte; 
+    javaLogEntry (bool lnT, string ln) {
+        this->lineType = lnT;
+    }
+
+    bool isStackTrace () const {
+        return lineType; 
     };
 
     string getLine () {
         return line; 
+    }
+
+    void push (string li) {
+        lines.push_back (li);
     }
 };

@@ -11,7 +11,7 @@ ${OUT_DIR}:
 	${MKDIR_P} ${OUT_DIR}
 
 $(TARGET): $(TARGET).cpp
-			$(CC) $(CFLAGS) -o bin/$(TARGET) $(TARGET).cpp
+			$(CC) $(CFLAGS) -o bin/$(TARGET) $(TARGET).cpp -l boost_program_options
 
 clean:
 	$(RM) -r ${OUT_DIR}
