@@ -10,6 +10,11 @@
 #include <ctime>
 #include <chrono>
 #include <exception>
+#include <unordered_map> 
+
+// Non-STL standard libraries:
+#include <sys/stat.h>
+
 
 // BOOST Library Functionality as Needed:
 #include <boost/program_options.hpp>
@@ -29,10 +34,12 @@
 using namespace boost;
 using namespace boost::program_options;
 using namespace std;
-//namespace po = boost::program_options; 
 
 int main(int argc, char * argv[])
 {
+    char const *log_folder = "./logs/";
+    mkdir(log_folder, 0755); 
+
     string filename;
     string delimiter = ",";
     bool dump = false;
@@ -100,6 +107,11 @@ int main(int argc, char * argv[])
     if (vm.count("dump")) {
         dump = true; 
     }
+    if (!vm.count("input-file")) {
+        cout << "ERROR: No File Specified for Parsing!" << endl;
+        cout << desc << endl;
+    }
+
     /******************** 
      * END CLI Parsing: 
     *********************/

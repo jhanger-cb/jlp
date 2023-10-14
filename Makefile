@@ -1,8 +1,9 @@
-CC		= c++
-CFLAGS	= -O3 -g -Wall
-TARGET	= jlp
-OUT_DIR	= ./bin/
-MKDIR_P	= mkdir -p
+CC			= c++
+CFLAGS		= -O3 -g -Wall
+TARGET		= jlp
+OUT_DIR		= ./bin/
+LOGS_DIR	= ./logs/
+MKDIR_P		= mkdir -p
 
 all: directories $(TARGET)
 directories: ${OUT_DIR}
@@ -15,3 +16,4 @@ $(TARGET): $(TARGET).cpp
 
 clean:
 	$(RM) -r ${OUT_DIR}
+	$(RM) -r ${LOGS_DIR}

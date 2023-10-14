@@ -34,6 +34,7 @@ private:
         WARN = 1 << 14
     }; 
     time_t pStart, pEnd; 
+    unordered_map<string, int> stackEntries; // eg: <jenkins.security.ImpersonatingExecutorService$1.run(ImpersonatingExecutorService.java:68), 1688>
 
     // Line Item Variables; 
     string fileName, line;
@@ -113,9 +114,26 @@ public:
         }
     }
 
+    void addStackItem (string line) {
+        istringstream ss(line);
+        string firstWord, traceItem; 
+        ss >> firstWord;
+        getline(ss,traceItem);
+        stackEntries[traceItem]++;
+    }
+
     void dump () {
         for ( long unsigned int i=0; i< this->logEntries.size(); i++) {
           logEntries[i].dump ();
+        }
+        // Order the unordered_map; 
+        //map<string, int> stackEntriesOrdered(stackEntries.begin(), stackEntries.end());
+        multimap<int, string> stackEntriesOrdered; 
+        for (auto x : stackEntries) {
+            stackEntriesOrdered.insert(pair<int, string>(x.second, x.first));
+        }
+        for (auto x : stackEntriesOrdered) {
+            cout << x.first << " " << x.second << endl;
         }
     }
 
@@ -163,6 +181,7 @@ public:
         cout << "\n`-._.-`-._.-`-> Log Parsing Summary " << this->fileName << "<-`-._.-`-._.-`" << endl;
         cout << "\tLines:\t\t\t\t" << elements << endl;
         cout << "\tStack Trace Lines:\t\t" << stackTraceCount << endl; 
+        cout << "\tUniq Stack Trace Items:\t\t" << stackEntries.size () << endl;
         cout << "\t\tALL Entries:\t\t" << allCount << endl;
         cout << "\t\tDEBUG Entries:\t\t" << debugCount << endl;
         cout << "\t\tERROR Entries:\t\t" << errorCount << endl;
@@ -218,6 +237,9 @@ public:
         else {
             this->lineCount++;
             this->stackTraceCount++;
+
+            this->addStackItem(line);
+
             if(this->logEntries.size() -1 == 0) {
                 javaLogEntry logEntry (line);
                 return logEntry;
@@ -228,5 +250,9 @@ public:
                 return logEntry;
             }
         }
+    }
+
+    void serialize() {
+
     }
 };

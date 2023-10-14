@@ -27,15 +27,21 @@ public:
         }
     }
 
-    vector<string> getStackTrace () {
-        return stackTrace;
+    void dump () {
+        for ( long unsigned int i=0; i < lines.size(); i++) {
+            cout << lines[i] << endl;
+        }
+        for ( long unsigned int i=0; i< stackTrace.size(); i++) {
+            cout << stackTrace[i] << endl;
+        }
     }
+
     vector<string> getLines () {
         return lines; 
     }
 
-    void pushST (string li) {
-        stackTrace.push_back (li);
+    vector<string> getStackTrace () {
+        return stackTrace;
     }
 
     bool isStackTrace (string firstWord) {
@@ -53,12 +59,7 @@ public:
         }
     }
 
-    void dump () {
-        for ( long unsigned int i=0; i < lines.size(); i++) {
-            cout << lines[i] << endl;
-        }
-        for ( long unsigned int i=0; i< stackTrace.size(); i++) {
-            cout << stackTrace[i] << endl;
-        }
+    void pushST (string li) {
+        stackTrace.push_back (li);
     }
 };
