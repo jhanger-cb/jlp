@@ -69,25 +69,6 @@ public:
         this->printStats ();
     }
 
-    logType hashit (string const& inString) {
-        if (inString == "ALL") return ALL;
-        else if (inString == "DEBUG") return DEBUG; 
-        else if (inString == "ERROR" || inString == "ERR") return ERROR; 
-        else if (inString == "FATAL") return FATAL; 
-        else if (inString == "FINE") return FINE; 
-        else if (inString == "FINER") return FINER; 
-        else if (inString == "FINEST") return FINEST; 
-        else if (inString == "INFO") return INFO; 
-        else if (inString == "OFF") return OFF; 
-        else if (inString == "SEVERE") return SEVERE; 
-        else if (inString == "TRACE") return TRACE; 
-        else if (inString == "WARNING" || inString == "WARN") return WARN; 
-        else {
-            //cout << "UNKNOWN Log Level: " << inString << endl;
-            return UNKNOWN; 
-        }
-    }
-
     void addCounterMetrics (string logLevel) {
         switch (hashit(logLevel)) {
             case ALL:
@@ -132,6 +113,50 @@ public:
         }
     }
 
+    void dump () {
+        for ( long unsigned int i=0; i< this->logEntries.size(); i++) {
+          logEntries[i].dump ();
+        }
+    }
+
+    vector<javaLogEntry> getElements() const {
+        return this->logEntries; 
+    }; 
+
+    logType hashit (string const& inString) {
+        if (inString == "ALL") return ALL;
+        else if (inString == "DEBUG") return DEBUG; 
+        else if (inString == "ERROR" || inString == "ERR") return ERROR; 
+        else if (inString == "FATAL") return FATAL; 
+        else if (inString == "FINE") return FINE; 
+        else if (inString == "FINER") return FINER; 
+        else if (inString == "FINEST") return FINEST; 
+        else if (inString == "INFO") return INFO; 
+        else if (inString == "OFF") return OFF; 
+        else if (inString == "SEVERE") return SEVERE; 
+        else if (inString == "TRACE") return TRACE; 
+        else if (inString == "WARNING" || inString == "WARN") return WARN; 
+        else {
+            //cout << "UNKNOWN Log Level: " << inString << endl;
+            return UNKNOWN; 
+        }
+    }
+
+    bool isStackTrace (string firstWord) {
+        string ln; 
+        struct tm tm; 
+
+        if (strptime(firstWord.c_str(), "%Y-%m-%d", &tm)) {
+            getline(ss, ln);
+            return false;
+            // cout << firstWord << ln /*<< "\t\t // This is a head JVM Logging Event " */<< endl;
+        } else {
+            getline(ss, ln);
+            return true; 
+            // cout << firstWord << ln << endl;
+        }
+    }
+
     void printStats () {
         int elements = this->lineCount;
         cout.imbue(locale());
@@ -159,40 +184,6 @@ public:
         (duration == 0) ? lps = elements : lps = elements / duration; 
         cout << "\tDuration:\t\t" << duration << " s" << endl;
         cout << "\tProcessed:\t\t" << lps/1000 << "K lines per second" << endl;
-    }
-
-    vector<javaLogEntry> getElements() const {
-        return this->logEntries; 
-    }; 
-
-    string peekNextLine () {
-        string localLine; 
-        streampos curPos = this->fileStream.tellg();
-        getline(this->fileStream, localLine);
-        this->fileStream.seekg(curPos, ios_base::beg);
-
-        return localLine;
-    }
-
-    bool isStackTrace (string firstWord) {
-        string ln; 
-        struct tm tm; 
-
-        if (strptime(firstWord.c_str(), "%Y-%m-%d", &tm)) {
-            getline(ss, ln);
-            return false;
-            // cout << firstWord << ln /*<< "\t\t // This is a head JVM Logging Event " */<< endl;
-        } else {
-            getline(ss, ln);
-            return true; 
-            // cout << firstWord << ln << endl;
-        }
-    }
-
-    void dump () {
-        for ( long unsigned int i=0; i< this->logEntries.size(); i++) {
-          logEntries[i].dump ();
-        }
     }
 
     void processFile() {
