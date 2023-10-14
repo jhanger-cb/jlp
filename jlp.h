@@ -16,8 +16,23 @@ using namespace std;
 class javaLogParser {
 private:
     // Metrics Variables; 
-    int lineCount, allCount, debugCount, errorCount, fatalCount, fineCount, finerCount, finestCount, infoCount, severeCount, stackTraceCount, traceCount, unknownCount, warnCount; 
-    enum logType { ALL, CONFIG, DEBUG, ERROR, FATAL, FINE, FINER, FINEST, INFO, SEVERE, TRACE, UNKNOWN, WARN }; 
+    int lineCount, allCount, debugCount, errorCount, fatalCount, fineCount, finerCount, finestCount, infoCount, offCount, severeCount, stackTraceCount, traceCount, unknownCount, warnCount; 
+    enum logType { 
+        ALL = 1 << 1,
+        CONFIG = 1 << 2,
+        DEBUG = 1 << 3,
+        ERROR = 1 << 4,
+        FATAL = 1 << 5,
+        FINE = 1 << 6,
+        FINER = 1 << 7,
+        FINEST = 1 << 8,
+        INFO = 1 << 9,
+        OFF = 1 << 10,
+        SEVERE = 1 << 11,
+        TRACE = 1 << 12,
+        UNKNOWN = 1 << 13,
+        WARN = 1 << 14
+    }; 
     time_t pStart, pEnd; 
 
     // Line Item Variables; 
@@ -25,8 +40,10 @@ private:
     ifstream fh, fileStream;
     istringstream ss;
     vector<javaLogEntry> logEntries;
-    vector<string> lines; 
-    vector<string>::const_iterator iter;
+    // deprecated: vector<string> lines;
+    string filters;
+    vector<string> fileNames; 
+    vector<string>::const_iterator iter; // Unused thusfar, may remove as a global iterator seems pointless ? "dweeb" : "that's one hypothesis"
 
     /* Log File Fields*/
     string timestamp; 
@@ -35,34 +52,16 @@ private:
     string message; 
 
 public:
-    javaLogParser (string fileName) {
+    javaLogParser (string fileName, string filters = "") {
         this->pStart = time(nullptr);       // Metrics for Efficiency; 
+        this->fileName = fileName; 
+        if (!filters.empty()){
+            this->filters = filters;
+        }
         // Metrics for Line Item Types; 
         lineCount=allCount=debugCount=errorCount=fatalCount=fineCount=finerCount=finestCount= infoCount= severeCount=stackTraceCount=traceCount=unknownCount=warnCount=0;
-        // Open File from cli param; 
-        this->fh = ifstream(fileName);
-        if (!fh) { cout << "Error in File" << endl; }
-
-        // Load File into this->lines;
-        // Converting to load file into vector of Java Log Entries: 
-        //   Each entry object could contain a stack trace and up to 1024 elements of string objects representing an individual line; 
-        while (getline(this->fh, this->line)){
-            string firstWord, timestamp, id, logLevel; 
-            this->ss = istringstream(this->line);
-            this->ss >> firstWord >> timestamp >> id >> logLevel; 
-            addCounterMetrics (logLevel);
-            
-            if (this->isStackTrace(firstWord)) {
-                //cout << "This line is a part of a Stack Trace" << endl;
-                this->stackTraceCount++;
-                this->unknownCount--;
-            }
-            else {
-                //cout << "This line is NOT part of a Stack Trace" << endl;
-            }
-            lines.push_back(line);
-            this->lineCount++;
-        }
+        
+        this->processFile();
     }
 
     ~javaLogParser () {
@@ -79,6 +78,7 @@ public:
         else if (inString == "FINER") return FINER; 
         else if (inString == "FINEST") return FINEST; 
         else if (inString == "INFO") return INFO; 
+        else if (inString == "OFF") return OFF; 
         else if (inString == "SEVERE") return SEVERE; 
         else if (inString == "TRACE") return TRACE; 
         else if (inString == "WARNING" || inString == "WARN") return WARN; 
@@ -114,6 +114,9 @@ public:
             case INFO:
                 this->infoCount++;
                 break;
+            case OFF:
+                this->offCount++;
+                break;
             case SEVERE:
                 this->severeCount++;
                 break;
@@ -125,16 +128,16 @@ public:
                 break;
             default:
                 this->unknownCount++;
-                //cout << "Failure to log Metrics for UNKNOWN Log Level Type" << endl;
+                cout << "Failure to log Metrics for UNKNOWN Log Level Type: " << logLevel << endl;
         }
     }
 
     void printStats () {
-        int elements = this->lines.size();
+        int elements = this->lineCount;
         cout.imbue(locale());
-        cout << "\n`-._.-`-._.-`-> Log Parsing Summary <-`-._.-`-._.-`" << endl;
-        cout << "\tLines:\t\t\t" << elements << endl;
-        cout << "\tStack Traces:\t\t" << stackTraceCount << endl; 
+        cout << "\n`-._.-`-._.-`-> Log Parsing Summary " << this->fileName << "<-`-._.-`-._.-`" << endl;
+        cout << "\tLines:\t\t\t\t" << elements << endl;
+        cout << "\tStack Trace Lines:\t\t" << stackTraceCount << endl; 
         cout << "\t\tALL Entries:\t\t" << allCount << endl;
         cout << "\t\tDEBUG Entries:\t\t" << debugCount << endl;
         cout << "\t\tERROR Entries:\t\t" << errorCount << endl;
@@ -143,6 +146,7 @@ public:
         cout << "\t\tFINER Entries:\t\t" << finerCount << endl;
         cout << "\t\tFINEST Entries:\t\t" << finestCount << endl;
         cout << "\t\tINFO Entries:\t\t" << infoCount << endl;
+        cout << "\t\tOFF Entries:\t\t" << offCount << endl;
         cout << "\t\tSEVERE Entries:\t\t" << severeCount << endl;
         cout << "\t\tTRACE Entries:\t\t" << traceCount << endl;
         cout << "\t\tUNKNOWN Entries:\t" << unknownCount << endl;
@@ -154,11 +158,11 @@ public:
         double lps; 
         (duration == 0) ? lps = elements : lps = elements / duration; 
         cout << "\tDuration:\t\t" << duration << " s" << endl;
-        cout << "\tEfficiency:\t\t" << lps << " Events per second" << endl;
+        cout << "\tProcessed:\t\t" << lps/1000 << "K lines per second" << endl;
     }
 
-    vector<string> getLines() const {
-        return lines; 
+    vector<javaLogEntry> getElements() const {
+        return this->logEntries; 
     }; 
 
     string peekNextLine () {
@@ -171,22 +175,67 @@ public:
     }
 
     bool isStackTrace (string firstWord) {
-            string ln; 
-            struct tm tm; 
+        string ln; 
+        struct tm tm; 
 
-            if (strptime(firstWord.c_str(), "%Y-%m-%d", &tm)) {
-              getline(ss, ln);
-              return false;
-              // cout << firstWord << ln /*<< "\t\t // This is a head JVM Logging Event " */<< endl;
-            } else {
-              getline(ss, ln);
-              return true; 
-              // cout << firstWord << ln << endl;
-            }
+        if (strptime(firstWord.c_str(), "%Y-%m-%d", &tm)) {
+            getline(ss, ln);
+            return false;
+            // cout << firstWord << ln /*<< "\t\t // This is a head JVM Logging Event " */<< endl;
+        } else {
+            getline(ss, ln);
+            return true; 
+            // cout << firstWord << ln << endl;
+        }
     }
-    void dump (){
-        for ( long unsigned int i=0; i< this->lines.size(); i++) {
-          cout << lines[i] << endl;
+
+    void dump () {
+        for ( long unsigned int i=0; i< this->logEntries.size(); i++) {
+          logEntries[i].dump ();
+        }
+    }
+
+    void processFile() {
+        this->fh = ifstream(this->fileName);
+        if (!fh) { cout << "Error in File" << endl; }
+
+        while (getline(this->fh, this->line)){
+            string firstWord, timestamp, id, logLevel; 
+            this->ss = istringstream(this->line);
+            this->ss >> firstWord >> timestamp >> id >> logLevel; 
+            
+            //cout << "firstWord:\t" << firstWord << endl; 
+            if (!this->isStackTrace(firstWord)) {
+                javaLogEntry logEntry = this->processLine(line);
+                this->logEntries.push_back(logEntry); 
+                addCounterMetrics (logLevel);
+            }
+            else {
+                //  Recursively add/pop line to previous javaLogEntry into stack trace vector; 
+                this->processLine(line, true);
+            }
+        }
+    }
+
+    javaLogEntry processLine(string line, bool stackTrace = false) {
+        if(!stackTrace) {
+            //cout << "Initial Log Entry - Not a Stack Trace:" << line << endl;
+            javaLogEntry logEntry = javaLogEntry(line);
+            this->lineCount++;
+            return logEntry;
+        } 
+        else {
+            this->lineCount++;
+            this->stackTraceCount++;
+            if(this->logEntries.size() -1 == 0) {
+                javaLogEntry logEntry (line);
+                return logEntry;
+            } else {
+                javaLogEntry logEntry = this->logEntries[this->logEntries.size() -1]; 
+                logEntry.pushST(line);
+
+                return logEntry;
+            }
         }
     }
 };
