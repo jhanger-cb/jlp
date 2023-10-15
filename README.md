@@ -6,6 +6,17 @@
 * Thus this will default compatible with that typical and most commonly used logging format; 
 * TODO: Set a Logging format for CD/RO; 
 
+### TODOs:
+* Configure a Log parsing format for CD/RO; 
+  * Expand the logger types supported, from just Java, make a more broad `ulp` -> the Universal Log Parser; 
+* Comparison operator overload to compare two log entry items (since timestamp and proc id can be ignored mostly in a comparision). 
+* Create an Object class for Stack Trace Line Items to deconstruct the stack trace into more granular components; 
+  * Normalization; 
+* Port to Java
+  * Native Java app port; 
+  * Perhaps interface with JNI as a backend library;
+* 
+
 ### Log Format Object: 
 n: date  time  id logLevel  method  [trace|message]
 (n+1): if first field is not date, add to object; 

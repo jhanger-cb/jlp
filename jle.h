@@ -1,3 +1,11 @@
+/*************
+* jle.h
+*   This file declares the class for JavaLogEntry; 
+*   This class is responsible for: 
+*    1. Storing the log lines and stack traces related to the log line; 
+*    2. One object per Line of log (not counting stack trace)
+*    3. All the lines of a stack trace -> TODO: convert to objects to stack trace line item objects (to be made); 
+*************/
 #include <sstream>
 
 using namespace std;
@@ -9,6 +17,12 @@ private:
 
     // Line Item Variables; 
     string fileName, line;
+
+    // Log File Fields
+    string timestamp; 
+    int long unsigned id; 
+    string logLevel;
+    string message; 
 
 public:
     javaLogEntry () {

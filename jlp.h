@@ -35,22 +35,25 @@ private:
     }; 
     time_t pStart, pEnd; 
     unordered_map<string, int> stackEntries; // eg: <jenkins.security.ImpersonatingExecutorService$1.run(ImpersonatingExecutorService.java:68), 1688>
+    unordered_map<string, int> messageEntries; 
 
     // Line Item Variables; 
     string fileName, line;
     ifstream fh, fileStream;
     istringstream ss;
     vector<javaLogEntry> logEntries;
-    // deprecated: vector<string> lines;
     string filters;
     vector<string> fileNames; 
     vector<string>::const_iterator iter; // Unused thusfar, may remove as a global iterator seems pointless ? "dweeb" : "that's one hypothesis"
 
-    /* Log File Fields*/
+    // Log File Fields
     string timestamp; 
     int long unsigned id; 
     string logLevel;
     string message; 
+
+    // Logging Output Vars
+    string ule_log, uste_log, stats_log; 
 
 public:
     javaLogParser (string fileName, string filters = "") {
@@ -59,6 +62,12 @@ public:
         if (!filters.empty()){
             this->filters = filters;
         }
+        
+        // Logging output filename propagation:
+        this->ule_log      = "logs/" + fileName + "_ule.log";
+        this->uste_log     = "logs/" + fileName + "_uste.log";
+        this->stats_log    = "logs/" + fileName + "_stats.log";
+
         // Metrics for Line Item Types; 
         lineCount=allCount=debugCount=errorCount=fatalCount=fineCount=finerCount=finestCount= infoCount= severeCount=stackTraceCount=traceCount=unknownCount=warnCount=0;
         
@@ -68,6 +77,14 @@ public:
     ~javaLogParser () {
         this->fh.close ();
         this->printStats ();
+        this->serialize ();
+    }
+
+    bool operator ==(javaLogParser const &target) {
+        // Compare pertinent values; 
+        //      logLevel ; message
+        //      date, time, and id can be disregarded for line comparisons; 
+        return true; 
     }
 
     void addCounterMetrics (string logLevel) {
@@ -126,15 +143,64 @@ public:
         for ( long unsigned int i=0; i< this->logEntries.size(); i++) {
           logEntries[i].dump ();
         }
-        // Order the unordered_map; 
-        //map<string, int> stackEntriesOrdered(stackEntries.begin(), stackEntries.end());
+
+        // Order the unordered_maps; 
         multimap<int, string> stackEntriesOrdered; 
+        multimap<int, string> messageEntriesOrdered; 
         for (auto x : stackEntries) {
             stackEntriesOrdered.insert(pair<int, string>(x.second, x.first));
         }
-        for (auto x : stackEntriesOrdered) {
-            cout << x.first << " " << x.second << endl;
+        for (auto x : messageEntries) {
+            messageEntriesOrdered.insert(pair<int, string>(x.second, x.first));
         }
+
+        // Create a map reverse iterator
+        multimap<int, string>::reverse_iterator it;
+
+        // Iterate them reversely: 
+        
+        cout << "\n==============================" << " Unique Stack Trace Entries " << "==============================\n" << endl;
+        for (it = stackEntriesOrdered.rbegin(); it != stackEntriesOrdered.rend(); it++) {
+            cout << it->first << " " << it->second << endl;
+        }
+        cout << "\n==============================" << " Unique Log Entry Messages " << "==============================\n" << endl;
+        for (it = messageEntriesOrdered.rbegin(); it != messageEntriesOrdered.rend(); it++) {
+            cout << it->first << " " << it->second << endl;
+        }
+    }
+
+    vector<string> generateStats () {
+        vector<string> stats; 
+        int elements = this->lineCount;
+        stats.push_back ("\n`-._.-`-._.-`-> Log Parsing Summary " + this->fileName + "<-`-._.-`-._.-`\n");
+        stats.push_back ("\tLines:\t\t\t\t" + to_string(elements) + "\n");
+        stats.push_back ("\tStack Trace Lines:\t\t" + to_string(stackTraceCount) + "\n"); 
+        stats.push_back ("\tUniq Stack Trace Items:\t\t" + to_string(stackEntries.size ()) + "\n");
+        stats.push_back ("\tUniq Log Entry Items:\t\t" + to_string(messageEntries.size ()) + "\n");
+        // Suppress 0 value Entries to remove noisy output; 
+        if(allCount != 0){ stats.push_back ("\t\tALL Entries:\t\t" + to_string(allCount) + "\n"); }
+        if(debugCount != 0){ stats.push_back ("\t\tDEBUG Entries:\t\t" + to_string(debugCount) + "\n"); }
+        if(errorCount != 0){ stats.push_back ("\t\tERROR Entries:\t\t" + to_string(errorCount) + "\n"); }
+        if(fatalCount != 0){ stats.push_back ("\t\tFATAL Entries:\t\t" + to_string(fatalCount) + "\n"); }
+        if(fineCount != 0){ stats.push_back ("\t\tFINE Entries:\t\t" + to_string(fineCount) + "\n"); }
+        if(finerCount != 0){ stats.push_back ("\t\tFINER Entries:\t\t" + to_string(finerCount) + "\n"); }
+        if(finestCount != 0){ stats.push_back ("\t\tFINEST Entries:\t\t" + to_string(finestCount) + "\n"); }
+        if(infoCount != 0){ stats.push_back ("\t\tINFO Entries:\t\t" + to_string(infoCount) + "\n"); }
+        if(offCount != 0){ stats.push_back ("\t\tOFF Entries:\t\t" + to_string(offCount) + "\n"); }
+        if(severeCount != 0){ stats.push_back ("\t\tSEVERE Entries:\t\t" + to_string(severeCount) + "\n"); }
+        if(traceCount != 0){ stats.push_back ("\t\tTRACE Entries:\t\t" + to_string(traceCount) + "\n"); }
+        if(unknownCount != 0){ stats.push_back ("\t\tUNKNOWN Entries:\t" + to_string(unknownCount) + "\n"); }
+        if(warnCount != 0){ stats.push_back ("\t\tWARN Entries:\t\t" + to_string(warnCount) + "\n"); }
+        stats.push_back ("\tStart Ts:\t\t" + to_string(pStart) + "\n");
+        this->pEnd = time(nullptr);
+        int duration = pEnd - pStart; 
+        stats.push_back ("\tEnd Time:\t\t" + to_string(pEnd) + "\n");
+        double lps; 
+        (duration == 0) ? lps = elements : lps = elements / duration; 
+        stats.push_back ("\tDuration:\t\t" + to_string(duration) + " s\n");
+        stats.push_back ("\tProcessed:\t\t" + to_string(lps/1000) + "K lines per second" + "\n");
+
+        return stats;
     }
 
     vector<javaLogEntry> getElements() const {
@@ -175,34 +241,22 @@ public:
         }
     }
 
+    multimap<int, string> orderMap (unordered_map<string, int>& sourceMap) {
+        multimap<int, string> orderedMap;
+        for (auto x : sourceMap) {
+            orderedMap.insert(pair<int, string>(x.second, x.first));
+        }
+
+        return orderedMap; 
+    }
+
     void printStats () {
-        int elements = this->lineCount;
-        cout.imbue(locale());
-        cout << "\n`-._.-`-._.-`-> Log Parsing Summary " << this->fileName << "<-`-._.-`-._.-`" << endl;
-        cout << "\tLines:\t\t\t\t" << elements << endl;
-        cout << "\tStack Trace Lines:\t\t" << stackTraceCount << endl; 
-        cout << "\tUniq Stack Trace Items:\t\t" << stackEntries.size () << endl;
-        cout << "\t\tALL Entries:\t\t" << allCount << endl;
-        cout << "\t\tDEBUG Entries:\t\t" << debugCount << endl;
-        cout << "\t\tERROR Entries:\t\t" << errorCount << endl;
-        cout << "\t\tFATAL Entries:\t\t" << fatalCount << endl;
-        cout << "\t\tFINE Entries:\t\t" << fineCount << endl;
-        cout << "\t\tFINER Entries:\t\t" << finerCount << endl;
-        cout << "\t\tFINEST Entries:\t\t" << finestCount << endl;
-        cout << "\t\tINFO Entries:\t\t" << infoCount << endl;
-        cout << "\t\tOFF Entries:\t\t" << offCount << endl;
-        cout << "\t\tSEVERE Entries:\t\t" << severeCount << endl;
-        cout << "\t\tTRACE Entries:\t\t" << traceCount << endl;
-        cout << "\t\tUNKNOWN Entries:\t" << unknownCount << endl;
-        cout << "\t\tWARN Entries:\t\t" << warnCount << endl;
-        cout << "\tStart Ts:\t\t" << pStart << endl;
-        this->pEnd = time(nullptr);
-        int duration = pEnd - pStart; 
-        cout << "\tEnd Time:\t\t" << pEnd << endl;
-        double lps; 
-        (duration == 0) ? lps = elements : lps = elements / duration; 
-        cout << "\tDuration:\t\t" << duration << " s" << endl;
-        cout << "\tProcessed:\t\t" << lps/1000 << "K lines per second" << endl;
+        // TODO: reference vector<string> generateStats (); iterate it; 
+        vector<string> stats = generateStats ();
+        vector<string>::iterator sit;
+        for (sit = stats.begin(); sit != stats.end(); ++sit) {
+            cout << *sit;
+        }
     }
 
     void processFile() {
@@ -210,14 +264,17 @@ public:
         if (!fh) { cout << "Error in File" << endl; }
 
         while (getline(this->fh, this->line)){
-            string firstWord, timestamp, id, logLevel; 
+            string firstWord, timestamp, id, logLevel, msg; 
             this->ss = istringstream(this->line);
             this->ss >> firstWord >> timestamp >> id >> logLevel; 
+            getline(this->ss, msg);  // Get remaining line entries as one object; 
             
             //cout << "firstWord:\t" << firstWord << endl; 
             if (!this->isStackTrace(firstWord)) {
+                
                 javaLogEntry logEntry = this->processLine(line);
                 this->logEntries.push_back(logEntry); 
+                this->messageEntries[msg]++;
                 addCounterMetrics (logLevel);
             }
             else {
@@ -253,6 +310,45 @@ public:
     }
 
     void serialize() {
+        // Dump the metrics and data to file(s); 
+        //  <log_name>_ule.log      -> Uniq Log Entries (Ordered most occurring to least)
+        //  <log_name> uste.log     -> Uniq Stack Trace Entries (Ordered most occurring to least)
+        //  <log_name>_stats.log    -> stats () / metrics (); 
+        ofstream uleLogFile(this->ule_log), usteLogFile(this->uste_log), statsLogFile(this->stats_log); 
+                // Order the unordered_maps; TODO: make reused code for the ordering of maps, so far failed; find way; 
+        multimap<int, string> stackEntriesOrdered;
+        multimap<int, string> messageEntriesOrdered;
+        for (auto x : stackEntries) {
+            stackEntriesOrdered.insert(pair<int, string>(x.second, x.first));
+        }
+        for (auto x : messageEntries) {
+            messageEntriesOrdered.insert(pair<int, string>(x.second, x.first));
+        }
 
+        // Create a map reverse iterator
+        multimap<int, string>::reverse_iterator it;
+        vector<string>::iterator sit;
+
+        // Iterate them reversely: 
+        
+        usteLogFile << "\n==============================" << " Unique Stack Trace Entries " << "==============================\n" << endl;
+        for (it = stackEntriesOrdered.rbegin(); it != stackEntriesOrdered.rend(); it++) {
+            usteLogFile << it->first << " " << it->second << endl;
+        }
+
+        uleLogFile << "\n==============================" << " Unique Log Entry Messages " << "==============================\n" << endl;
+        for (it = messageEntriesOrdered.rbegin(); it != messageEntriesOrdered.rend(); it++) {
+            uleLogFile << it->first << " " << it->second << endl;
+        }
+
+        statsLogFile << "\n==============================" << " Java Log Parsing Statsistics " << "==============================\n" << endl;
+        vector<string> stats = this->generateStats ();
+        for (sit = stats.begin(); sit != stats.end(); ++sit) {
+            statsLogFile << *sit;
+        }
+
+        uleLogFile.close ();
+        usteLogFile.close ();
+        statsLogFile.close ();
     }
 };
