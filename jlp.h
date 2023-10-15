@@ -56,7 +56,7 @@ private:
     string ule_log, uste_log, stats_log; 
 
 public:
-    javaLogParser (string fileName, string filters = "") {
+    javaLogParser (string fileName, string filters = "", bool aggregate = false) {
         this->pStart = time(nullptr);       // Metrics for Efficiency; 
         this->fileName = fileName; 
         if (!filters.empty()){
@@ -74,10 +74,55 @@ public:
         this->processFile();
     }
 
+    javaLogParser (javaLogParser *logParser) {
+
+    }
+
+    javaLogParser (bool aggregate) {
+        lineCount=allCount=debugCount=errorCount=fatalCount=fineCount=finerCount=finestCount= infoCount= severeCount=stackTraceCount=traceCount=unknownCount=warnCount=0;
+    }
+
     ~javaLogParser () {
         this->fh.close ();
-        this->printStats ();
-        this->serialize ();
+    }
+
+    bool operator +=(javaLogParser const &source) {
+        // Set filename to `aggregate + _{stat,ule,ulste} + .log`;
+        this->fileName = "aggregate";
+        this->lineCount += source.lineCount;
+        this->allCount += source.allCount;
+        this->debugCount += source.debugCount;
+        this->errorCount += source.errorCount;
+        this->fatalCount += source.fatalCount;
+        this->fineCount += source.fineCount;
+        this->finerCount += source.finerCount;
+        this->finestCount += source.finestCount;
+        this->infoCount += source.infoCount;
+        this->offCount += source.offCount;
+        this->severeCount += source.severeCount;
+        this->stackTraceCount += source.stackTraceCount;
+        this->traceCount += source.traceCount;
+        this->unknownCount += source.unknownCount;
+        this->warnCount += source.warnCount; 
+        if(this->pStart > source.pStart) { this->pStart = source.pStart; }
+        if(this->pEnd < source.pEnd) { this->pEnd = source.pEnd; } 
+
+        // Add Maps Items: 
+        for (auto x : source.stackEntries) {
+            this->stackEntries[x.first] += x.second;  
+        }
+        for (auto x : source.messageEntries) {
+            this->messageEntries[x.first] += x.second;  
+        }
+
+        // Add Line Item Variables; 
+        this->fileNames.push_back (source.fileName);
+        // Add javaLogEntry vector: TODO: Need to create operator+ overload in javaLogEntry; 
+        for (auto x : source.logEntries) {
+            this->logEntries.push_back (x);
+        }
+
+        return true;
     }
 
     bool operator ==(javaLogParser const &target) {
@@ -225,6 +270,12 @@ public:
             return UNKNOWN; 
         }
     }
+    
+    string header (string title, int style) {
+        string header = "======================================== " + title + "========================================\n";
+        string header2 = "======================================== " + title + "========================================\n";
+        return header;
+    }
 
     bool isStackTrace (string firstWord) {
         string ln; 
@@ -331,7 +382,7 @@ public:
 
         // Iterate them reversely: 
         
-        usteLogFile << "\n==============================" << " Unique Stack Trace Entries " << "==============================\n" << endl;
+        usteLogFile << "\n==============================" << " Unique Stack Trace Line Items " << "==============================\n" << endl;
         for (it = stackEntriesOrdered.rbegin(); it != stackEntriesOrdered.rend(); it++) {
             usteLogFile << it->first << " " << it->second << endl;
         }
