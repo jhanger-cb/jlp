@@ -53,20 +53,30 @@ private:
     string message; 
 
     // Logging Output Vars
-    string ule_log, uste_log, stats_log; 
+    string base_dir, ule_log, uste_log, stats_log; 
+    bool aggregate;
 
 public:
     javaLogParser (string fileName, string filters = "", bool aggregate = false) {
         this->pStart = time(nullptr);       // Metrics for Efficiency; 
+        this->base_dir = "logs/";
         this->fileName = fileName; 
+        //this->aggregate = aggregate; 
+
         if (!filters.empty()){
             this->filters = filters;
         }
         
         // Logging output filename propagation:
-        this->ule_log      = "logs/" + fileName + "_ule.log";
-        this->uste_log     = "logs/" + fileName + "_uste.log";
-        this->stats_log    = "logs/" + fileName + "_stats.log";
+        if (this->aggregate) {
+            this->ule_log      = "aggregate_ule.log";
+            this->uste_log     = "aggregate_uste.log";
+            this->stats_log    = "aggregate_stats.log";
+        } else {
+            this->ule_log      = fileName + "_ule.log";
+            this->uste_log     = fileName + "_uste.log";
+            this->stats_log    = fileName + "_stats.log";
+        }
 
         // Metrics for Line Item Types; 
         lineCount=allCount=debugCount=errorCount=fatalCount=fineCount=finerCount=finestCount=infoCount=offCount=severeCount=stackTraceCount=traceCount=unknownCount=warnCount=0;
@@ -74,11 +84,26 @@ public:
         this->processFile();
     }
 
+/*  Let compiler create this for us; 
     javaLogParser (javaLogParser *logParser) {
-
+        this->base_dir = "logs/";
     }
+*/
 
     javaLogParser (bool aggregate) {
+        this->base_dir = "logs/";
+        this->aggregate = aggregate;
+        //this->aggregate = aggregate;
+        // Logging output filename propagation:
+        if (this->aggregate) {
+            this->ule_log      = "aggregate_ule.log";
+            this->uste_log     = "aggregate_uste.log";
+            this->stats_log    = "aggregate_stats.log";
+        } else {
+            this->ule_log      = fileName + "_ule.log";
+            this->uste_log     = fileName + "_uste.log";
+            this->stats_log    = fileName + "_stats.log";
+        }
         lineCount=allCount=debugCount=errorCount=fatalCount=fineCount=finerCount=finestCount=infoCount=offCount=severeCount=stackTraceCount=traceCount=unknownCount=warnCount=0;
     }
 
@@ -88,7 +113,19 @@ public:
 
     bool operator +=(javaLogParser const &source) {
         // Set filename to `aggregate + _{stat,ule,ulste} + .log`;
-        this->fileName = "aggregate";
+        this->base_dir = "logs/";
+        //this->aggregate = source.aggregate;
+        // Logging output filename propagation:
+        if (this->aggregate) {
+            this->ule_log      = "aggregate_ule.log";
+            this->uste_log     = "aggregate_uste.log";
+            this->stats_log    = "aggregate_stats.log";
+        } else {
+            this->ule_log      = fileName + "_ule.log";
+            this->uste_log     = fileName + "_uste.log";
+            this->stats_log    = fileName + "_stats.log";
+        }
+        //this->fileName = "aggregate";
         this->lineCount += source.lineCount;
         this->allCount += source.allCount;
         this->debugCount += source.debugCount;
@@ -118,10 +155,11 @@ public:
         // Add Line Item Variables; 
         this->fileNames.push_back (source.fileName);
         // Add javaLogEntry vector: TODO: Need to create operator+ overload in javaLogEntry; 
-        for (auto x : source.logEntries) {
+        this->logEntries = source.logEntries;
+/*        for (auto x : source.logEntries) {
             this->logEntries.push_back (x);
         }
-
+*/
         return true;
     }
 
@@ -204,11 +242,11 @@ public:
 
         // Iterate them reversely: 
         
-        cout << "\n==============================" << " Unique Stack Trace Entries " << "==============================\n" << endl;
+        cout << this->header(string("Unique Stack Trace Entries")); 
         for (it = stackEntriesOrdered.rbegin(); it != stackEntriesOrdered.rend(); it++) {
             cout << it->first << " " << it->second << endl;
         }
-        cout << "\n==============================" << " Unique Log Entry Messages " << "==============================\n" << endl;
+        cout << this->header(string("Unique Log Entry Messages"));
         for (it = messageEntriesOrdered.rbegin(); it != messageEntriesOrdered.rend(); it++) {
             cout << it->first << " " << it->second << endl;
         }
@@ -217,7 +255,6 @@ public:
     vector<string> generateStats () {
         vector<string> stats; 
         int elements = this->lineCount;
-        stats.push_back ("\n`-._.-`-._.-`-> Log Parsing Summary " + this->fileName + "<-`-._.-`-._.-`\n");
         stats.push_back ("\tLines:\t\t\t\t" + to_string(elements) + "\n");
         stats.push_back ("\tStack Trace Lines:\t\t" + to_string(stackTraceCount) + "\n"); 
         stats.push_back ("\tUniq Stack Trace Items:\t\t" + to_string(stackEntries.size ()) + "\n");
@@ -271,10 +308,14 @@ public:
         }
     }
     
-    string header (string title, int style) {
-        string header = "======================================== " + title + "========================================\n";
-        string header2 = "-*`*-._.-*`*-._.-*`*-._.-*`*-._.-*`*-._.-> " + title + "<-*`*-._.-*`*-._.-*`*-._.-*`*-._.-*`*-._.-\n";
-        return header;
+    string header (string title, int style = 2) {
+        switch (style) {
+            case 1:
+                return string("======================================== " + title + "========================================\n");
+            case 2:
+            default:
+                return string("-*`*-._.-*`*-._.-*`*-._.-*`*-._.-*`*-._.-> " + title + "<-*`*-._.-*`*-._.-*`*-._.-*`*-._.-*`*-._.-\n");
+        }
     }
 
     bool isStackTrace (string firstWord) {
@@ -312,7 +353,9 @@ public:
 
     void processFile() {
         this->fh = ifstream(this->fileName);
-        if (!fh) { cout << "Error in File" << endl; }
+        if (!fh) { 
+            string header = string("Error in File: " + this->fileName); 
+            cout << this->header(header) << endl; }
 
         while (getline(this->fh, this->line)){
             string firstWord, timestamp, id, logLevel, msg; 
@@ -338,7 +381,7 @@ public:
     javaLogEntry processLine(string line, bool stackTrace = false) {
         if(!stackTrace) {
             //cout << "Initial Log Entry - Not a Stack Trace:" << line << endl;
-            javaLogEntry logEntry = javaLogEntry(line);
+            javaLogEntry logEntry (line);
             this->lineCount++;
             return logEntry;
         } 
@@ -346,13 +389,16 @@ public:
             this->lineCount++;
             this->stackTraceCount++;
 
-            this->addStackItem(line);
+            this->addStackItem(line); // add stack trace line to unique stack trace line items unordered_map; 
 
-            if(this->logEntries.size() -1 == 0) {
+            int sz = this->logEntries.size ();
+
+            if(sz == 0) {
                 javaLogEntry logEntry (line);
                 return logEntry;
             } else {
-                javaLogEntry logEntry = this->logEntries[this->logEntries.size() -1]; 
+                javaLogEntry logEntry (this->logEntries[this->logEntries.size () -1]);  // Causing Core Dump
+                //javaLogEntry logEntry (line);
                 logEntry.pushST(line);
 
                 return logEntry;
@@ -365,7 +411,15 @@ public:
         //  <log_name>_ule.log      -> Uniq Log Entries (Ordered most occurring to least)
         //  <log_name> uste.log     -> Uniq Stack Trace Entries (Ordered most occurring to least)
         //  <log_name>_stats.log    -> stats () / metrics (); 
-        ofstream uleLogFile(this->ule_log), usteLogFile(this->uste_log), statsLogFile(this->stats_log); 
+        ofstream uleLogFile(this->base_dir + this->ule_log), usteLogFile(this->base_dir + this->uste_log), statsLogFile(this->base_dir + this->stats_log); 
+        if (!this->aggregate) {
+            replace(this->ule_log.begin(), this->ule_log.end(), '.', '_');
+            replace(this->ule_log.begin(), this->ule_log.end(), '/', '_');
+            replace(this->uste_log.begin(), this->uste_log.end(), '.', '_');
+            replace(this->uste_log.begin(), this->uste_log.end(), '/', '_');
+            replace(this->stats_log.begin(), this->stats_log.end(), '.', '_');
+            replace(this->stats_log.begin(), this->stats_log.end(), '/', '_');
+        }
                 // Order the unordered_maps; TODO: make reused code for the ordering of maps, so far failed; find way; 
         multimap<int, string> stackEntriesOrdered;
         multimap<int, string> messageEntriesOrdered;
@@ -382,17 +436,17 @@ public:
 
         // Iterate them reversely: 
         
-        usteLogFile << "\n==============================" << " Unique Stack Trace Line Items " << "==============================\n" << endl;
+        usteLogFile << this->header(" Unique Stack Trace Line Items ");
         for (it = stackEntriesOrdered.rbegin(); it != stackEntriesOrdered.rend(); it++) {
             usteLogFile << it->first << " " << it->second << endl;
         }
 
-        uleLogFile << "\n==============================" << " Unique Log Entry Messages " << "==============================\n" << endl;
+        uleLogFile << this->header(" Unique Log Entry Messages ");
         for (it = messageEntriesOrdered.rbegin(); it != messageEntriesOrdered.rend(); it++) {
             uleLogFile << it->first << " " << it->second << endl;
         }
 
-        statsLogFile << "\n==============================" << " Java Log Parsing Statsistics " << "==============================\n" << endl;
+        statsLogFile << this->header(" Java Log Parsing Statsistics ");
         vector<string> stats = this->generateStats ();
         for (sit = stats.begin(); sit != stats.end(); ++sit) {
             statsLogFile << *sit;

@@ -41,6 +41,18 @@ public:
         }
     }
 
+    javaLogEntry (javaLogEntry const &logEntry) {
+        this->containsStackTrace    = logEntry.containsStackTrace;
+        this->lines                 = logEntry.lines;                               // probably need to iter item.add(...)
+        this->stackTrace            = logEntry.stackTrace;                     // "
+        this->fileName              = logEntry.fileName;
+        this->line                  = logEntry.line;
+        this->timestamp             = logEntry.timestamp;
+        this->id                    = logEntry.id;
+        this->logLevel              = logEntry.logLevel;
+        this->message               = logEntry.message;
+    }
+
     void dump () {
         for ( long unsigned int i=0; i < lines.size(); i++) {
             cout << lines[i] << endl;
