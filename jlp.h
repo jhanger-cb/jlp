@@ -69,7 +69,7 @@ public:
         this->stats_log    = "logs/" + fileName + "_stats.log";
 
         // Metrics for Line Item Types; 
-        lineCount=allCount=debugCount=errorCount=fatalCount=fineCount=finerCount=finestCount= infoCount= severeCount=stackTraceCount=traceCount=unknownCount=warnCount=0;
+        lineCount=allCount=debugCount=errorCount=fatalCount=fineCount=finerCount=finestCount=infoCount=offCount=severeCount=stackTraceCount=traceCount=unknownCount=warnCount=0;
         
         this->processFile();
     }
@@ -79,7 +79,7 @@ public:
     }
 
     javaLogParser (bool aggregate) {
-        lineCount=allCount=debugCount=errorCount=fatalCount=fineCount=finerCount=finestCount= infoCount= severeCount=stackTraceCount=traceCount=unknownCount=warnCount=0;
+        lineCount=allCount=debugCount=errorCount=fatalCount=fineCount=finerCount=finestCount=infoCount=offCount=severeCount=stackTraceCount=traceCount=unknownCount=warnCount=0;
     }
 
     ~javaLogParser () {
@@ -273,7 +273,7 @@ public:
     
     string header (string title, int style) {
         string header = "======================================== " + title + "========================================\n";
-        string header2 = "======================================== " + title + "========================================\n";
+        string header2 = "-*`*-._.-*`*-._.-*`*-._.-*`*-._.-*`*-._.-> " + title + "<-*`*-._.-*`*-._.-*`*-._.-*`*-._.-*`*-._.-\n";
         return header;
     }
 
