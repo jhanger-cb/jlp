@@ -30,6 +30,7 @@ public:
     }
 
     javaLogEntry (string ln) {
+        this->line = ln;
         if(this->isStackTrace (ln)) {
             this->stackTrace.push_back(ln);
             this->containsStackTrace = true;
@@ -53,7 +54,7 @@ public:
         this->message               = logEntry.message;
     }
 
-    void dump () {
+    void dumpElements () {
         for ( long unsigned int i=0; i < lines.size(); i++) {
             cout << lines[i] << endl;
         }
@@ -62,8 +63,12 @@ public:
         }
     }
 
-    vector<string> getLines () {
-        return lines; 
+    string getLine () {
+        return this->line; 
+    }
+
+    string getMessage () {
+        return this->message;
     }
 
     vector<string> getStackTrace () {

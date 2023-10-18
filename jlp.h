@@ -15,120 +15,233 @@ using namespace std;
 
 class javaLogParser {
 private:
-    // Metrics Variables; 
-    int lineCount, allCount, debugCount, errorCount, fatalCount, fineCount, finerCount, finestCount, infoCount, offCount, severeCount, stackTraceCount, traceCount, unknownCount, warnCount; 
-    enum logType { 
-        ALL = 1 << 1,
-        CONFIG = 1 << 2,
-        DEBUG = 1 << 3,
-        ERROR = 1 << 4,
-        FATAL = 1 << 5,
-        FINE = 1 << 6,
-        FINER = 1 << 7,
-        FINEST = 1 << 8,
-        INFO = 1 << 9,
-        OFF = 1 << 10,
-        SEVERE = 1 << 11,
-        TRACE = 1 << 12,
-        UNKNOWN = 1 << 13,
-        WARN = 1 << 14
-    }; 
-    time_t pStart, pEnd; 
-    unordered_map<string, int> stackEntries; // eg: <jenkins.security.ImpersonatingExecutorService$1.run(ImpersonatingExecutorService.java:68), 1688>
-    unordered_map<string, int> messageEntries; 
+    // Global Level Variables not specific to any particular method: 
+    string fileName;
 
-    // Line Item Variables; 
-    string fileName, line;
-    ifstream fh, fileStream;
+    enum logType { ALL = 1 << 1, CONFIG = 1 << 2, DEBUG = 1 << 3, ERROR = 1 << 4, FATAL = 1 << 5, FINE = 1 << 6, FINER = 1 << 7, FINEST = 1 << 8, INFO = 1 << 9, OFF = 1 << 10, SEVERE = 1 << 11, TRACE = 1 << 12, UNKNOWN = 1 << 13, WARN = 1 << 14 }; 
+
+    // Metrics: 
+    // Count each type of logType encountered; 
+    int lineCount		= 0;
+	int allCount		= 0;
+	int debugCount		= 0;
+	int errorCount		= 0;
+	int fatalCount		= 0;
+	int fineCount		= 0;
+	int finerCount		= 0;
+	int finestCount		= 0;
+	int infoCount		= 0;
+	int offCount		= 0;
+	int severeCount		= 0;
+	int stackTraceCount	= 0;
+	int traceCount		= 0;
+	int unknownCount	= 0;
+	int warningCount	= 0; 
+
+    // Benchmark Metrics to measure timings: 
+    time_t pStart = time(nullptr);
+    time_t pEnd; 
+
+    unordered_map<string, int> messageEntries, allEntries, debugEntries, errorEntries, fatalEntries, fineEntries, finerEntries, finestEntries, infoEntries, offEntries, severeEntries, stackTraceEntries, traceEntries, unknownEntries, warningEntries; 
+
+    // Line Item Specific Variables;
+    string line;
+    ifstream fh;
     istringstream ss;
+
     vector<javaLogEntry> logEntries;
-    string filters;
-    vector<string> fileNames; 
     vector<string>::const_iterator iter; // Unused thusfar, may remove as a global iterator seems pointless ? "dweeb" : "that's one hypothesis"
 
     // Log File Fields
+    string date; 
     string timestamp; 
-    int long unsigned id; 
+    string id; 
     string logLevel;
     string message; 
 
     // Logging Output Vars
-    string base_dir, ule_log, uste_log, stats_log; 
-    bool aggregate;
+    string base_dir = "logs/";
+    string ule_log = "";
+    string uste_log = "";
+    string stats_log = "";
+    string all_log = "";
+    string debug_log = "";
+    string error_log = "";
+    string fatal_log = "";
+    string fine_log = "";
+    string finer_log = "";
+    string finest_log = "";
+    string info_log = "";
+    string off_log = "";
+    string severe_log = "";
+    string trace_log = "";
+    string warning_log = "";
+    string unknown_log = "";
+    string fst_log = "";
+
+//Global Options paramount to this class:
+    static bool debug; 
+    static bool aggregate;
+    static bool serialize;
+    static bool dump;
+    static bool stats;
+    static string filters;
 
 public:
-    javaLogParser (string fileName, string filters = "", bool aggregate = false) {
+    static bool getDebug () {
+        return javaLogParser::debug;
+    }
+
+    static bool setDebug (bool dbg) {
+        javaLogParser::debug = dbg;
+        return javaLogParser::debug;
+    }
+
+    static bool getDump() {
+        return javaLogParser::dump;
+    }
+
+    static bool setDump (bool dmp) {
+        javaLogParser::dump = dmp;
+        return javaLogParser::dump;
+    }
+
+    static bool getAggregate () {
+        return javaLogParser::aggregate;
+    }
+
+    static bool setAggregate (bool agg) {
+        javaLogParser::aggregate = agg;
+        return javaLogParser::aggregate;
+    }
+
+    static bool getSerialize () {
+        return javaLogParser::serialize;
+    }
+
+    static bool setSerialize (bool ser) {
+        javaLogParser::serialize = ser;
+        return javaLogParser::serialize;
+    }
+
+    static bool getStats() {
+        return javaLogParser::stats;
+    }
+
+    static bool setStats (bool ser) {
+        javaLogParser::stats = ser;
+        return javaLogParser::stats;
+    }
+
+    static string getFilters () {
+        return javaLogParser::filters;
+    }
+
+    static string setFilters (string fltrs) {
+        javaLogParser::filters = fltrs;
+        return javaLogParser::filters;
+    }
+
+    javaLogParser (string fileName) {
         this->pStart = time(nullptr);       // Metrics for Efficiency; 
-        this->base_dir = "logs/";
+        lineCount=allCount=debugCount=errorCount=fatalCount=fineCount=finerCount=finestCount=infoCount=offCount=severeCount=stackTraceCount=traceCount=unknownCount=warningCount=0;
+        if(javaLogParser::getDebug ()) { cout << "DEBUG: debug: " << javaLogParser::debug << "  param debug: " << debug << endl; }
+        if(javaLogParser::getDebug ()) { cout << "DEBUG: javaLogParser initialized (filename, filters, aggregate, debug)" << "( " << fileName << ", " << filters << ", " << aggregate << "," << debug << ")" << endl; }
         this->fileName = fileName; 
-        //this->aggregate = aggregate; 
+        this->aggregate = aggregate; 
 
         if (!filters.empty()){
             this->filters = filters;
         }
         
-        // Logging output filename propagation:
-        if (this->aggregate) {
-            this->ule_log      = "aggregate_ule.log";
-            this->uste_log     = "aggregate_uste.log";
-            this->stats_log    = "aggregate_stats.log";
-        } else {
-            this->ule_log      = fileName + "_ule.log";
-            this->uste_log     = fileName + "_uste.log";
-            this->stats_log    = fileName + "_stats.log";
-        }
-
-        // Metrics for Line Item Types; 
-        lineCount=allCount=debugCount=errorCount=fatalCount=fineCount=finerCount=finestCount=infoCount=offCount=severeCount=stackTraceCount=traceCount=unknownCount=warnCount=0;
-        
+        this->initFileNames ();
         this->processFile();
     }
 
-/*  Let compiler create this for us; 
-    javaLogParser (javaLogParser *logParser) {
-        this->base_dir = "logs/";
+    javaLogParser (const javaLogParser& source) {
+        if(this->pStart > source.pStart) { this->pStart = source.pStart; }
+        if(this->pEnd < source.pEnd) { this->pEnd = source.pEnd; } 
+        this->fileName =  source.fileName; 
+        this->lineCount = source.lineCount;
+        this->allCount = source.allCount;
+        this->debugCount = source.debugCount;
+        this->errorCount = source.errorCount;
+        this->fatalCount = source.fatalCount;
+        this->fineCount = source.fineCount;
+        this->finerCount = source.finerCount;
+        this->finestCount = source.finestCount;
+        this->infoCount = source.infoCount;
+        this->offCount = source.offCount;
+        this->severeCount = source.severeCount;
+        this->stackTraceCount = source.stackTraceCount;
+        this->traceCount = source.traceCount;
+        this->unknownCount = source.unknownCount;
+        this->warningCount = source.warningCount; 
+        // Add Maps Items: 
+        this->messageEntries = source.messageEntries;
+        this->allEntries = source.allEntries;
+        this->debugEntries = source.debugEntries;
+        this->errorEntries = source.errorEntries;
+        this->fatalEntries = source.fatalEntries;
+        this->fineEntries = source.fineEntries;
+        this->finerEntries = source.finerEntries;
+        this->finestEntries = source.finestEntries;
+        this->infoEntries = source.infoEntries;
+        this->offEntries = source.offEntries;
+        this->severeEntries = source.severeEntries;
+        this->stackTraceEntries = source.stackTraceEntries;
+        this->traceEntries = source.traceEntries;
+        this->unknownEntries = source.unknownEntries;
+        this->warningEntries = source.warningEntries;
     }
-*/
 
-    javaLogParser (bool aggregate) {
+    javaLogParser () {
+        this->pStart = time(nullptr);       // Metrics for Efficiency; 
+        this->lineCount = 0;
+        this->allCount = 0;
+        this->debugCount = 0;
+        this->errorCount = 0;
+        this->fatalCount = 0;
+        this->fineCount = 0;
+        this->finerCount = 0;
+        this->finestCount = 0;
+        this->infoCount = 0;
+        this->offCount = 0;
+        this->severeCount = 0;
+        this->stackTraceCount = 0;
+        this->traceCount = 0;
+        this->unknownCount = 0;
+        this->warningCount = 0; 
+        // Logging Output Vars
         this->base_dir = "logs/";
-        this->aggregate = aggregate;
-        //this->aggregate = aggregate;
-        // Logging output filename propagation:
-        if (this->aggregate) {
-            this->ule_log      = "aggregate_ule.log";
-            this->uste_log     = "aggregate_uste.log";
-            this->stats_log    = "aggregate_stats.log";
-        } else {
-            this->ule_log      = fileName + "_ule.log";
-            this->uste_log     = fileName + "_uste.log";
-            this->stats_log    = fileName + "_stats.log";
-        }
-        lineCount=allCount=debugCount=errorCount=fatalCount=fineCount=finerCount=finestCount=infoCount=offCount=severeCount=stackTraceCount=traceCount=unknownCount=warnCount=0;
+        this->ule_log = "";
+        this->uste_log = "";
+        this->stats_log = "";
+        this->all_log = "";
+        this->debug_log = "";
+        this->error_log = "";
+        this->fatal_log = "";
+        this->fine_log = "";
+        this->finer_log = "";
+        this->finest_log = "";
+        this->info_log = "";
+        this->off_log = "";
+        this->severe_log = "";
+        this->trace_log = "";
+        this->warning_log = "";
+        this->unknown_log = "";
+        this->fst_log = "";
     }
-
+ 
     ~javaLogParser () {
         this->fh.close ();
     }
 
-    bool operator +=(javaLogParser const &source) {
+    javaLogParser& operator +=(javaLogParser const &source) {
         // Set filename to `aggregate + _{stat,ule,ulste} + .log`;
-        this->base_dir = "logs/";
-        //this->aggregate = source.aggregate;
-        // Logging output filename propagation:
-        if (this->aggregate) {
-            this->ule_log      = "aggregate_ule.log";
-            this->uste_log     = "aggregate_uste.log";
-            this->stats_log    = "aggregate_stats.log";
-        } else {
-            this->ule_log      = fileName + "_ule.log";
-            this->uste_log     = fileName + "_uste.log";
-            this->stats_log    = fileName + "_stats.log";
-        }
-        //this->fileName = "aggregate";
         this->lineCount += source.lineCount;
         this->allCount += source.allCount;
-        this->debugCount += source.debugCount;
+        debugCount += source.debugCount;
         this->errorCount += source.errorCount;
         this->fatalCount += source.fatalCount;
         this->fineCount += source.fineCount;
@@ -140,27 +253,23 @@ public:
         this->stackTraceCount += source.stackTraceCount;
         this->traceCount += source.traceCount;
         this->unknownCount += source.unknownCount;
-        this->warnCount += source.warnCount; 
+        this->warningCount += source.warningCount; 
         if(this->pStart > source.pStart) { this->pStart = source.pStart; }
         if(this->pEnd < source.pEnd) { this->pEnd = source.pEnd; } 
 
         // Add Maps Items: 
-        for (auto x : source.stackEntries) {
-            this->stackEntries[x.first] += x.second;  
+        for (auto x : source.stackTraceEntries) {
+            this->stackTraceEntries[x.first] += x.second;  
         }
         for (auto x : source.messageEntries) {
             this->messageEntries[x.first] += x.second;  
         }
 
-        // Add Line Item Variables; 
-        this->fileNames.push_back (source.fileName);
         // Add javaLogEntry vector: TODO: Need to create operator+ overload in javaLogEntry; 
-        this->logEntries = source.logEntries;
-/*        for (auto x : source.logEntries) {
+        for (auto x : source.logEntries) {
             this->logEntries.push_back (x);
         }
-*/
-        return true;
+        return *this;
     }
 
     bool operator ==(javaLogParser const &target) {
@@ -171,70 +280,100 @@ public:
     }
 
     void addCounterMetrics (string logLevel) {
+        // Filter date/time/id from lines for better uniq counting; 
+        string ln = this->logLevel + " " + this->message; //this->logEntries[idx].getMessage ();
         switch (hashit(logLevel)) {
             case ALL:
                 this->allCount++;
+                this->allEntries[ln]++;
                 break;
             case DEBUG:
-                this->debugCount++;
+                debugCount++;
+                debugEntries[ln]++;
                 break;
             case ERROR:
                 this->errorCount++;
+                this->errorEntries[ln]++;
                 break;
             case FATAL:
                 this->fatalCount++;
+                this->fatalEntries[ln]++;
                 break;
             case FINE:
                 this->fineCount++;
+                this->fineEntries[ln]++;
                 break;
             case FINER:
                 this->finerCount++;
+                this->finerEntries[ln]++;
                 break;
             case FINEST:
                 this->finestCount++;
+                this->finestEntries[ln]++;
                 break;
             case INFO:
                 this->infoCount++;
+                this->infoEntries[ln]++;
                 break;
             case OFF:
                 this->offCount++;
+                this->offEntries[ln]++;
                 break;
             case SEVERE:
                 this->severeCount++;
+                this->severeEntries[ln]++;
                 break;
             case TRACE:
                 this->traceCount++;
+                this->traceEntries[ln]++;
                 break;
             case WARN:
-                this->warnCount++;
+                this->warningCount++;
+                this->warningEntries[ln]++;
                 break;
             default:
                 this->unknownCount++;
-                cout << "Failure to log Metrics for UNKNOWN Log Level Type: " << logLevel << endl;
+                this->unknownEntries[ln]++;
+                cout << "Failure to log Metrics for UNKNOWN Log Level Type: " << logLevel << ln << endl;
         }
+    }
+
+    void addStackTraceMetrics (string line) {
+
+
     }
 
     void addStackItem (string line) {
         istringstream ss(line);
         string firstWord, traceItem; 
         ss >> firstWord;
-        getline(ss,traceItem);
-        stackEntries[traceItem]++;
+        if (firstWord != "at"){
+            string tmp; 
+            getline(ss,tmp);
+            traceItem = firstWord + tmp;
+        } else {
+            getline(ss,traceItem);
+        }
+        stackTraceEntries[traceItem]++;
     }
 
-    void dump () {
+    void dumpElements () {
         for ( long unsigned int i=0; i< this->logEntries.size(); i++) {
-          logEntries[i].dump ();
+          logEntries[i].dumpElements ();
         }
 
         // Order the unordered_maps; 
-        multimap<int, string> stackEntriesOrdered; 
+        multimap<int, string> stackTraceEntriesOrdered; 
         multimap<int, string> messageEntriesOrdered; 
-        for (auto x : stackEntries) {
-            stackEntriesOrdered.insert(pair<int, string>(x.second, x.first));
+        multimap<int, string> severeEntriesOrdered; 
+        for (auto x : stackTraceEntries) {
+            stackTraceEntriesOrdered.insert(pair<int, string>(x.second, x.first));
         }
         for (auto x : messageEntries) {
             messageEntriesOrdered.insert(pair<int, string>(x.second, x.first));
+        }
+        for (auto x : severeEntries) {
+            severeEntriesOrdered.insert(pair<int, string>(x.second, x.first));
         }
 
         // Create a map reverse iterator
@@ -243,21 +382,26 @@ public:
         // Iterate them reversely: 
         
         cout << this->header(string("Unique Stack Trace Entries")); 
-        for (it = stackEntriesOrdered.rbegin(); it != stackEntriesOrdered.rend(); it++) {
+        for (it = stackTraceEntriesOrdered.rbegin(); it != stackTraceEntriesOrdered.rend(); it++) {
             cout << it->first << " " << it->second << endl;
         }
         cout << this->header(string("Unique Log Entry Messages"));
         for (it = messageEntriesOrdered.rbegin(); it != messageEntriesOrdered.rend(); it++) {
             cout << it->first << " " << it->second << endl;
         }
+        cout << this->header(string("Unique SEVERE Log Entries"));
+        for (it = severeEntriesOrdered.rbegin (); it != severeEntriesOrdered.rend (); it++) {
+            cout << it->first << " " << it->second << endl;
+        }
     }
+
 
     vector<string> generateStats () {
         vector<string> stats; 
         int elements = this->lineCount;
         stats.push_back ("\tLines:\t\t\t\t" + to_string(elements) + "\n");
         stats.push_back ("\tStack Trace Lines:\t\t" + to_string(stackTraceCount) + "\n"); 
-        stats.push_back ("\tUniq Stack Trace Items:\t\t" + to_string(stackEntries.size ()) + "\n");
+        stats.push_back ("\tUniq Stack Trace Items:\t\t" + to_string(stackTraceEntries.size ()) + "\n");
         stats.push_back ("\tUniq Log Entry Items:\t\t" + to_string(messageEntries.size ()) + "\n");
         // Suppress 0 value Entries to remove noisy output; 
         if(allCount != 0){ stats.push_back ("\t\tALL Entries:\t\t" + to_string(allCount) + "\n"); }
@@ -272,7 +416,7 @@ public:
         if(severeCount != 0){ stats.push_back ("\t\tSEVERE Entries:\t\t" + to_string(severeCount) + "\n"); }
         if(traceCount != 0){ stats.push_back ("\t\tTRACE Entries:\t\t" + to_string(traceCount) + "\n"); }
         if(unknownCount != 0){ stats.push_back ("\t\tUNKNOWN Entries:\t" + to_string(unknownCount) + "\n"); }
-        if(warnCount != 0){ stats.push_back ("\t\tWARN Entries:\t\t" + to_string(warnCount) + "\n"); }
+        if(warningCount != 0){ stats.push_back ("\t\tWARN Entries:\t\t" + to_string(warningCount) + "\n"); }
         stats.push_back ("\tStart Ts:\t\t" + to_string(pStart) + "\n");
         this->pEnd = time(nullptr);
         int duration = pEnd - pStart; 
@@ -288,6 +432,7 @@ public:
     vector<javaLogEntry> getElements() const {
         return this->logEntries; 
     }; 
+
 
     logType hashit (string const& inString) {
         if (inString == "ALL") return ALL;
@@ -311,26 +456,72 @@ public:
     string header (string title, int style = 2) {
         switch (style) {
             case 1:
-                return string("======================================== " + title + "========================================\n");
+                return string("\n\n======================================== " + title + " ========================================\n\n");
             case 2:
             default:
-                return string("-*`*-._.-*`*-._.-*`*-._.-*`*-._.-*`*-._.-> " + title + "<-*`*-._.-*`*-._.-*`*-._.-*`*-._.-*`*-._.-\n");
+                return string("\n\n-*`*-._.-*`*-._.-*`*-._.-*`*-._.-*`*-._.-> " + title + " <-*`*-._.-*`*-._.-*`*-._.-*`*-._.-*`*-._.-\n\n");
         }
     }
 
-    bool isStackTrace (string firstWord) {
-        string ln; 
-        struct tm tm; 
+    void initFileNames () {
+        // Logging output filename propagation:
+        // fileName has already been parsed for unsupported chracters, TODO: perhaps moving the filename regexing to here may be better suited in future; 
 
-        if (strptime(firstWord.c_str(), "%Y-%m-%d", &tm)) {
-            getline(ss, ln);
-            return false;
-            // cout << firstWord << ln /*<< "\t\t // This is a head JVM Logging Event " */<< endl;
+        if(javaLogParser::getDebug ()) { cout << "DEBUG: Calling initFileNames ()" << endl; } 
+
+        bool dbgPrev = this->getDebug ();
+        if(this->getDebug()) { this->setDebug(false); }
+        if(this->getDebug ()) { cout<< "DEBUG: Debug flag is: " << javaLogParser::debug << endl; }
+        string prefix; 
+        if (this->aggregate) {
+            prefix = "aggregate"; 
         } else {
-            getline(ss, ln);
-            return true; 
-            // cout << firstWord << ln << endl;
+            prefix = this->fileName;
         }
+        if(javaLogParser::getDebug ()) { cout << "DEBUG: aggregate tested: " << prefix << "\t agg: " << this->aggregate << endl; }
+        this->base_dir      = "logs/";
+        if(javaLogParser::getDebug ()) { cout << "DEBUG: Initialized Log File Names: base_dir" << endl; }
+        this->ule_log       = prefix + "_ule.log";
+        if(javaLogParser::getDebug ()) { cout << "DEBUG: Initialized Log File Names: ule_log" << endl; }
+        this->uste_log      = prefix + "_uste.log";
+        if(javaLogParser::getDebug ()) { cout << "DEBUG: Initialized Log File Names: uste_log" << endl; }
+        this->stats_log     = prefix + "_stats.log";
+        if(javaLogParser::getDebug ()) { cout << "DEBUG: Initialized Log File Names: stats_log" << endl; }
+        this->all_log       = prefix + "_all.log";
+        if(javaLogParser::getDebug ()) { cout << "DEBUG: Initialized Log File Names: all_log" << endl; }
+        debug_log     = prefix + "_debug.log";
+        if(javaLogParser::getDebug ()) { cout << "DEBUG: Initialized Log File Names: debug_log" << endl; }
+        this->error_log     = prefix + "_error.log";
+        if(javaLogParser::getDebug ()) { cout << "DEBUG: Initialized Log File Names: err_log" << endl; }
+        this->fatal_log     = prefix + "_fatal.log";
+        if(javaLogParser::getDebug ()) { cout << "DEBUG: Initialized Log File Names: fatal_log" << endl; }
+        this->fine_log      = prefix + "_fine.log";
+        if(javaLogParser::getDebug ()) { cout << "DEBUG: Initialized Log File Names: fine_log" << endl; }
+        this->finer_log     = prefix + "_finer.log";
+        if(javaLogParser::getDebug ()) { cout << "DEBUG: Initialized Log File Names: finer_log" << endl; }
+        this->finest_log    = prefix + "_finest.log";
+        if(javaLogParser::getDebug ()) { cout << "DEBUG: Initialized Log File Names: finest_log" << endl; }
+        this->info_log      = prefix + "_info.log";
+        if(javaLogParser::getDebug ()) { cout << "DEBUG: Initialized Log File Names: info_log" << endl; } 
+        this->off_log       = prefix + "_off.log";
+        if(javaLogParser::getDebug ()) { cout << "DEBUG: Initialized Log File Names: off_log" << endl; } 
+        this->severe_log    = prefix + "_severe.log";
+        if(javaLogParser::getDebug ()) { cout << "DEBUG: Initialized Log File Names: severe_log" << endl; }
+        this->trace_log     = prefix + "_trace.log";
+        if(javaLogParser::getDebug ()) { cout << "DEBUG: Initialized Log File Names: trace_log" << endl; }
+        this->warning_log   = prefix + "_warning.log";
+        if(javaLogParser::getDebug ()) { cout << "DEBUG: Initialized Log File Names: warning_log" << endl; }
+        this->unknown_log   = prefix + "_unknown.log";
+        if(javaLogParser::getDebug ()) { cout << "DEBUG: Initialized Log File Names: unknown_log" << endl; }
+        this->fst_log       = prefix + "_fst.log";
+        if(javaLogParser::getDebug ()) { cout << "DEBUG: Initialized Log File Names: fst_log" << endl; }
+
+        if(dbgPrev) { this->setDebug (dbgPrev); }
+    }
+
+    bool isStackTrace (string firstWord) {
+        regex re("^[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]");
+        return !regex_match (firstWord, re);
     }
 
     multimap<int, string> orderMap (unordered_map<string, int>& sourceMap) {
@@ -352,30 +543,37 @@ public:
     }
 
     void processFile() {
-        this->fh = ifstream(this->fileName);
-        if (!fh) { 
+        try {
+            this->fh = ifstream(this->fileName);
+        } catch (const exception &e) {
+            cerr << e.what () << endl;
             string header = string("Error in File: " + this->fileName); 
-            cout << this->header(header) << endl; }
+            cerr << this->header(header) << endl; 
+        }
 
         while (getline(this->fh, this->line)){
-            string firstWord, timestamp, id, logLevel, msg; 
+            string firstWord;
             this->ss = istringstream(this->line);
-            this->ss >> firstWord >> timestamp >> id >> logLevel; 
-            getline(this->ss, msg);  // Get remaining line entries as one object; 
-            
             //cout << "firstWord:\t" << firstWord << endl; 
+            this->ss >> firstWord; 
+            
             if (!this->isStackTrace(firstWord)) {
-                
+                this->date = firstWord;
+                regex re("^[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]");
                 javaLogEntry logEntry = this->processLine(line);
                 this->logEntries.push_back(logEntry); 
-                this->messageEntries[msg]++;
-                addCounterMetrics (logLevel);
+                this->ss >> this->timestamp >> this->id >> this->logLevel; 
+                getline(this->ss, this->message);  // Get remaining line entries as one object; 
+                this->messageEntries[this->message]++;
+                addCounterMetrics (this->logLevel);
             }
             else {
                 //  Recursively add/pop line to previous javaLogEntry into stack trace vector; 
                 this->processLine(line, true);
+                addStackTraceMetrics(line);
             }
         }
+        if(javaLogParser::getDebug ()) { cout << "DEBUG: Processed File" << endl; }
     }
 
     javaLogEntry processLine(string line, bool stackTrace = false) {
@@ -397,8 +595,7 @@ public:
                 javaLogEntry logEntry (line);
                 return logEntry;
             } else {
-                javaLogEntry logEntry (this->logEntries[this->logEntries.size () -1]);  // Causing Core Dump
-                //javaLogEntry logEntry (line);
+                javaLogEntry logEntry (this->logEntries[sz -1]);  // -1 is important, causes core dump cuase itr is past last entry of vector; 
                 logEntry.pushST(line);
 
                 return logEntry;
@@ -406,38 +603,36 @@ public:
         }
     }
 
-    void serialize() {
+    void serializeData() {
         // Dump the metrics and data to file(s); 
         //  <log_name>_ule.log      -> Uniq Log Entries (Ordered most occurring to least)
         //  <log_name> uste.log     -> Uniq Stack Trace Entries (Ordered most occurring to least)
         //  <log_name>_stats.log    -> stats () / metrics (); 
-        ofstream uleLogFile(this->base_dir + this->ule_log), usteLogFile(this->base_dir + this->uste_log), statsLogFile(this->base_dir + this->stats_log); 
-        if (!this->aggregate) {
-            replace(this->ule_log.begin(), this->ule_log.end(), '.', '_');
-            replace(this->ule_log.begin(), this->ule_log.end(), '/', '_');
-            replace(this->uste_log.begin(), this->uste_log.end(), '.', '_');
-            replace(this->uste_log.begin(), this->uste_log.end(), '/', '_');
-            replace(this->stats_log.begin(), this->stats_log.end(), '.', '_');
-            replace(this->stats_log.begin(), this->stats_log.end(), '/', '_');
-        }
-                // Order the unordered_maps; TODO: make reused code for the ordering of maps, so far failed; find way; 
-        multimap<int, string> stackEntriesOrdered;
+        
+        // Create reverse multimap iterator
+        multimap<int, string>::reverse_iterator it;
+        // Create string iterator; 
+        vector<string>::iterator sit;
+
+        // These will always output on serialize; 
+        ofstream uleLogFile(this->base_dir + this->ule_log); 
         multimap<int, string> messageEntriesOrdered;
-        for (auto x : stackEntries) {
-            stackEntriesOrdered.insert(pair<int, string>(x.second, x.first));
-        }
         for (auto x : messageEntries) {
             messageEntriesOrdered.insert(pair<int, string>(x.second, x.first));
         }
 
-        // Create a map reverse iterator
-        multimap<int, string>::reverse_iterator it;
-        vector<string>::iterator sit;
+		ofstream usteLogFile(this->base_dir + this->uste_log); 
+        multimap<int, string> stackTraceEntriesOrdered;
+        for (auto x : stackTraceEntries) {
+            stackTraceEntriesOrdered.insert(pair<int, string>(x.second, x.first));
+        }
+
+		ofstream statsLogFile(this->base_dir + this->stats_log);
 
         // Iterate them reversely: 
         
         usteLogFile << this->header(" Unique Stack Trace Line Items ");
-        for (it = stackEntriesOrdered.rbegin(); it != stackEntriesOrdered.rend(); it++) {
+        for (it = stackTraceEntriesOrdered.rbegin(); it != stackTraceEntriesOrdered.rend(); it++) {
             usteLogFile << it->first << " " << it->second << endl;
         }
 
@@ -446,6 +641,7 @@ public:
             uleLogFile << it->first << " " << it->second << endl;
         }
 
+        // Generate stats and iterate the stats vector; 
         statsLogFile << this->header(" Java Log Parsing Statsistics ");
         vector<string> stats = this->generateStats ();
         for (sit = stats.begin(); sit != stats.end(); ++sit) {
@@ -454,6 +650,166 @@ public:
 
         uleLogFile.close ();
         usteLogFile.close ();
-        statsLogFile.close ();
+        statsLogFile.close ();  
+
+        // These logs depend on if there's entries found, no sense cluttering up the logs folder with empty files; 
+        //
+        if (this->allCount > 0) {
+            ofstream allLogFile(this->base_dir + this->all_log);
+            multimap<int, string> allEntriesOrdered;
+            for (auto x : allEntries) {
+                allEntriesOrdered.insert(pair<int, string>(x.second, x.first));
+            }
+            allLogFile << this->header(" Unique ALL Log Level Entries ");
+            for (it = allEntriesOrdered.rbegin(); it != allEntriesOrdered.rend(); it++) {
+                allLogFile << it->first << " " << it->second << endl;
+            }
+            allLogFile.close ();
+        }
+		if (debugCount > 0) {
+			ofstream debugLogFile(this->base_dir + debug_log); 
+            multimap<int, string> debugEntriesOrdered;
+            for (auto x : debugEntries) {
+                debugEntriesOrdered.insert(pair<int, string>(x.second, x.first));
+            }
+            debugLogFile << this->header(" Unique DEBUG Log Level Entries ");
+            for (it = debugEntriesOrdered.rbegin(); it != debugEntriesOrdered.rend(); it++) {
+                debugLogFile << it->first << " " << it->second << endl;
+            }
+            debugLogFile.close ();
+		}
+		if (this->errorCount > 0) {
+			ofstream errorLogFile(this->base_dir + this->error_log); 
+            multimap<int, string> errorEntriesOrdered;
+            for (auto x : errorEntries) {
+                errorEntriesOrdered.insert(pair<int, string>(x.second, x.first));
+            }
+            errorLogFile << this->header(" Unique ERROR Log Level Entries ");
+            for (it = errorEntriesOrdered.rbegin(); it != errorEntriesOrdered.rend(); it++) {
+                errorLogFile << it->first << " " << it->second << endl;
+            }
+            errorLogFile.close ();
+		}
+		if (this->fatalCount > 0) {
+			ofstream fatalLogFile(this->base_dir + this->fatal_log); 
+            multimap<int, string> fatalEntriesOrdered;
+            for (auto x : fatalEntries) {
+                fatalEntriesOrdered.insert(pair<int, string>(x.second, x.first));
+            }
+            fatalLogFile << this->header(" Unique Log Level Entries ");
+            for (it = fatalEntriesOrdered.rbegin(); it != fatalEntriesOrdered.rend(); it++) {
+                fatalLogFile << it->first << " " << it->second << endl;
+            }
+            fatalLogFile.close ();
+		}
+		if (this->fineCount > 0) {
+			ofstream fineLogFile(this->base_dir + this->fine_log); 
+            multimap<int, string> fineEntriesOrdered;
+            for (auto x : fineEntries) {
+                fineEntriesOrdered.insert(pair<int, string>(x.second, x.first));
+            }
+            fineLogFile << this->header(" Unique FINE Log Level Entries ");
+            for (it = fineEntriesOrdered.rbegin(); it != fineEntriesOrdered.rend(); it++) {
+                fineLogFile << it->first << " " << it->second << endl;
+            }
+            fineLogFile.close ();
+		}
+		if (this->finerCount > 0) {
+			ofstream finerLogFile(this->base_dir + this->finer_log); 
+            multimap<int, string> finerEntriesOrdered;
+            for (auto x : finerEntries) {
+                finerEntriesOrdered.insert(pair<int, string>(x.second, x.first));
+            }
+            finerLogFile << this->header(" Unique FINER Log Level Entries ");
+            for (it = finerEntriesOrdered.rbegin(); it != finerEntriesOrdered.rend(); it++) {
+                finerLogFile << it->first << " " << it->second << endl;
+            }
+            finerLogFile.close ();
+		}
+		if (this->finestCount > 0) {
+			ofstream finestLogFile(this->base_dir + this->finest_log); 
+            multimap<int, string> finestEntriesOrdered;
+            for (auto x : finestEntries) {
+                finestEntriesOrdered.insert(pair<int, string>(x.second, x.first));
+            }
+             finestLogFile << this->header(" Unique FINEST Log Level Entries ");
+            for (it = finestEntriesOrdered.rbegin(); it != finestEntriesOrdered.rend(); it++) {
+                finestLogFile << it->first << " " << it->second << endl;
+            } 
+            finestLogFile.close ();       
+		}
+		if (this->infoCount > 0) {
+			ofstream infoLogFile(this->base_dir + this->info_log); 
+            multimap<int, string> infoEntriesOrdered;
+            for (auto x : infoEntries) {
+                infoEntriesOrdered.insert(pair<int, string>(x.second, x.first));
+            }
+            infoLogFile << this->header(" Unique INFO Log Level Entries ");
+            for (it = infoEntriesOrdered.rbegin(); it != infoEntriesOrdered.rend(); it++) {
+                infoLogFile << it->first << " " << it->second << endl;
+            }
+            infoLogFile.close ();
+		}
+		if (this->offCount > 0) {
+			ofstream offLogFile(this->base_dir + this->off_log); 
+            multimap<int, string> offEntriesOrdered;
+            for (auto x : offEntries) {
+                offEntriesOrdered.insert(pair<int, string>(x.second, x.first));
+            }
+            offLogFile << this->header(" Unique OFF Log Level Entries ");
+            for (it = offEntriesOrdered.rbegin(); it != offEntriesOrdered.rend(); it++) {
+                offLogFile << it->first << " " << it->second << endl;
+            }
+            offLogFile.close ();
+		}
+		if (this->severeCount > 0) {
+			ofstream severeLogFile(this->base_dir + this->severe_log); 
+            multimap<int, string> severeEntriesOrdered;
+            for (auto x : severeEntries) {
+                severeEntriesOrdered.insert(pair<int, string>(x.second, x.first));
+            }
+            severeLogFile << this->header(" Unique SEVERE Log Level Entries ");
+            for (it = severeEntriesOrdered.rbegin(); it != severeEntriesOrdered.rend(); it++) {
+                severeLogFile << it->first << " " << it->second << endl;
+            }
+            severeLogFile.close ();
+		}
+		if (this->traceCount > 0) {
+			ofstream traceLogFile(this->base_dir + this->trace_log); 
+            multimap<int, string> traceEntriesOrdered;
+            for (auto x : traceEntries) {
+                traceEntriesOrdered.insert(pair<int, string>(x.second, x.first));
+            }
+            traceLogFile << this->header(" Unique TRACE Log Level Entries ");
+            for (it = traceEntriesOrdered.rbegin(); it != traceEntriesOrdered.rend(); it++) {
+                traceLogFile << it->first << " " << it->second << endl;
+            }
+            traceLogFile.close ();
+		}
+		if (this->warningCount > 0) {
+			ofstream warningLogFile(this->base_dir + this->warning_log); 
+            multimap<int, string> warningEntriesOrdered;
+            for (auto x : warningEntries) {
+                warningEntriesOrdered.insert(pair<int, string>(x.second, x.first));
+            }
+            warningLogFile << this->header(" Unique WARNING Log Level Entries ");
+            for (it = warningEntriesOrdered.rbegin(); it != warningEntriesOrdered.rend(); it++) {
+                warningLogFile << it->first << " " << it->second << endl;
+            }
+            warningLogFile.close ();
+		}
+		if (this->unknownCount > 0) {
+			ofstream unknownLogFile(this->base_dir + this->unknown_log); 
+            multimap<int, string> unknownEntriesOrdered;
+            for (auto x : unknownEntries) {
+                unknownEntriesOrdered.insert(pair<int, string>(x.second, x.first));
+            }
+            unknownLogFile << this->header(" Unique UNKNOWN Log Level Entries ");
+            for (it = unknownEntriesOrdered.rbegin(); it != unknownEntriesOrdered.rend(); it++) {
+                unknownLogFile << it->first << " " << it->second << endl;
+            }
+            unknownLogFile.close ();
+		} 
     }
+
 };

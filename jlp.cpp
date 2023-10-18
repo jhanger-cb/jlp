@@ -12,6 +12,7 @@
 #include <exception>
 #include <unordered_map> 
 #include <thread> 
+#include <set> 
 
 // Non-STL standard libraries:
 #include <sys/stat.h>
@@ -35,6 +36,14 @@ using namespace boost;
 using namespace boost::program_options;
 using namespace std;
 
+// Flags passed to be updated later to be seen by all objects in the program:
+bool javaLogParser::debug;
+bool javaLogParser::aggregate;
+bool javaLogParser::serialize;
+bool javaLogParser::dump; 
+bool javaLogParser::stats;
+string javaLogParser::filters;
+
 int main(int argc, char * argv[])
 {
     char const *log_folder = "./logs/";
@@ -44,10 +53,7 @@ int main(int argc, char * argv[])
     string delimiter = ",";
     string filtersRaw = "";
 
-    static bool dump = false;
-    static bool aggregate = false;
-    static bool serialize = false;
-    static bool stats = false;
+
     /******************** 
      *  BEGIN CLI Parsing: 
      *      Command Line Options & Parsing - Using BOOST Librariers 
@@ -61,16 +67,17 @@ int main(int argc, char * argv[])
     ("aggregate,a", "Specifies if stats and logs should be aggregated (true) or individual (false);")
     ("dump,d", "Print out the raw data.")
     ("serialize,s", "Save the aggregated data.")
-    ("print-stats,-p", "Print Statistics Summary.");
+    ("print-stats,-p", "Print Statistics Summary.")
+    ("debug,-b", "Print DEBUG log info");
 
     positional_options_description p;
     p.add("input-file", -1);
 
     // Alternative way for multiple options in parameters;
     // Skip storing the options in a map;  
-    //parsed_options parsed_options = command_line_parser(argc, argv).options(desc).run();
+    //  parsed_options parsed_options = command_line_parser(argc, argv).options(desc).run();
     parsed_options parsed_options = command_line_parser(argc,argv).options(desc).positional(p).run();
-    vector <vector <string>> lists;
+    vector <vector <string>> fileNames;
 
     variables_map vm;
     store(parsed_options, vm);
@@ -78,11 +85,6 @@ int main(int argc, char * argv[])
     notify(vm);
 
     for (const option& o : parsed_options.options) {
-        // For Multi-Value Parameters: 
-        if (o.string_key == "input-file"){
-            lists.push_back(o.value);
-        }
-
         // Display help text when requested
         if (o.string_key == "help") {
             cout << "Usage: " << argv[0] << " [OPTIONS] <filename>" << endl;
@@ -90,41 +92,53 @@ int main(int argc, char * argv[])
             return 0;
         }
 
+        // For Multi-Value Parameters: 
+        if (o.string_key == "input-file"){
+            fileNames.push_back(o.value);
+        }
+
         if (o.string_key == "log-level") {
             filtersRaw = o.string_key;
-            vector<string> filters; 
+            javaLogParser::setFilters (o.string_key);
+            vector<string> filterList; 
             //boost::split(filters, filters_raw, boost::is_any_of(","), boost::algorithm::token_compress_on);
             stringstream ss(filtersRaw);
             string s;
             while (getline(ss, s, ',')) {
-                filters.push_back(s);
+                filterList.push_back(s);
             }
             // TODO: 
             // Add logical operators to compare to enumeration variable of log levels; 
             // Set internal flags for printing out ONLY those log entries + stack traces
             // That are part of the filtered and selected Log Levels; 
-            cout << filters.size () << " Filters applied:" << endl;
-            for ( long unsigned int i=0; i< filters.size(); i++) {
-                cout << "\tFilter " << i+1 << ":\t" << filters[i] << endl;
+            cout << filterList.size () << " Filters applied:" << endl;
+            for ( long unsigned int i=0; i< filterList.size(); i++) {
+                cout << "\tFilter " << i+1 << ":\t" << filterList[i] << endl;
             }
         }
         if (o.string_key == "dump") {
-            dump = true; 
+            javaLogParser::setDump(true); 
         }
         if (o.string_key == "aggregate") {
-            aggregate = true; 
+            javaLogParser::setAggregate(true); 
         }
         if (o.string_key == "serialize") {
-            serialize = true; 
+            javaLogParser::setSerialize(true); 
         }
         if (o.string_key == "print-stats") {
-            stats = true; 
+            javaLogParser::setStats(true); 
         }
-        /*if ((lists[lists.size()].size() < 1)) {
-            cout << "ERROR: No File Specified for Parsing!" << endl;
-            cout << desc << endl;
-        }*/
+        if (o.string_key == "debug") {
+            javaLogParser::setDebug (true); 
+        }
     }
+    
+    if (argc <= 1 || fileNames.size() < 1) {
+        cout << "Usage: " << argv[0] << " [OPTIONS] <filename>" << endl;
+        cout << desc << endl;
+
+        return 0; 
+    } 
 
 
     /******************** 
@@ -140,23 +154,79 @@ int main(int argc, char * argv[])
     //      So far, should retain 1:1 <javaLogParser>:<file> mapping; 
     //      Solution: do both; Aggregate summary <javaLogParser1> + <javaLogParser2> => stats sums both;
     //          - serialize aggregates both to a summary file; 
-    javaLogParser aggregateParser(aggregate);
-    for (size_t i = 0; i < lists.size(); ++i) {
-        for (size_t j = 0; j < lists[i].size(); ++j) {
-            filename = lists[i][j];
-            //cout << "i: " << i << "\t j: " << j << "\tFilename: " << i+1 << ": " << i << ": " << filename << " Aggregation is: " << aggregate << endl;
-            javaLogParser jlp = javaLogParser(filename, filtersRaw, aggregate);
-            if (aggregate) {
-                aggregateParser += jlp;
-            }
-            if (dump && !aggregate) { jlp.dump (); }
-            if (serialize && !aggregate){ jlp.serialize(); }
-            if (stats && !aggregate) { jlp.printStats(); }
+    vector<javaLogParser> vlogParsers;
+    if (javaLogParser::getDebug ()) { cout << "DEBUG: init log parsers vector" << endl; }
+
+    // Iterate through Filenames; 
+    for (auto x : fileNames) {
+        for (auto y: x) {
+            filename = y;
+            regex re(" ", regex_constants::match_any); 
+            filename = regex_replace(filename, re, "\\ ");
+            re = regex("/", regex_constants::match_any); 
+            filename = regex_replace(filename, re, "\\/");
+            re = regex("#", regex_constants::match_any); 
+            filename = regex_replace(filename, re, "\\#");
+            re = regex("$", regex_constants::match_any); 
+            filename = regex_replace(filename, re, "\\$");
+            re = regex("\\", regex_constants::match_any); 
+            filename = regex_replace(filename, re, "\\\\");
+
+            if (javaLogParser::getDebug ()) { cout << "DEBUG:\n\tx: " << x.size () << "\n\tj: " << y.size() << "\n\tfilename: " << filename << "\n\tAggregation is: " << javaLogParser::getAggregate () << "\n\tDebug is " << javaLogParser::getDebug () << endl; }
+            vlogParsers.push_back (javaLogParser(filename));
+            if (javaLogParser::getDebug ()) { cout << "DEBUG: jlp created; pushing on stack;" << endl; }
+            //vlogParsers.push_back (jlp);
+            if (javaLogParser::getDebug ()) { cout << "DEBUG: jlp pushed" << endl; }
+
         }
     }
-    if (aggregate) {
-        if (dump) { aggregateParser.dump (); }
-        if (serialize){ aggregateParser.serialize(); }
-        if (stats) { aggregateParser.printStats(); }
+
+    if(javaLogParser::getDebug ()) { cout << "DEBUG: vlogParsers populated: " << vlogParsers.size() << endl; }
+    // Override Aggregates Setting if more than one file presented to -i or positionally on cli; 
+    if(fileNames.size() > 1) { 
+        javaLogParser::setAggregate(true); 
+        if (javaLogParser::getDebug) { cout << "DEBUG: Overrode Aggregate Option: new value TRUE" << endl; }
+        
+    } else {
+        javaLogParser::setAggregate(false); // No reason to have aggregation option set when there is only 1 file; 
+    }
+    //javaLogParser aggregateParser(/*vlogParsers[0]*/); // segfaults when no parameters passed, means failing to print help/usage and exit when no parameters passed !; 
+    javaLogParser aggregateParser;
+    // segfaults when no parameters passed, means failing to print help/usage and exit when no parameters passed !; 
+    if (javaLogParser::getDebug ()) { cout << "DEBUG: Entering loop: \n\tvlogParsers.size(): \t" << vlogParsers.size() << endl; }
+    int y=0;
+    int sz = vlogParsers.size ();
+    for (auto x : vlogParsers) {
+        if(javaLogParser::getDebug ()) { cout << "DEBUG: vlogParsers loop iteration: " << y << endl; }
+        if (javaLogParser::getAggregate ()) {    
+            if (javaLogParser::getDebug ()) { cout << "DEBUG: Aggregate selected, adding objects: vlog: " << vlogParsers.size () << endl; }
+            if (sz == 1) { 
+                javaLogParser aggregateParser(x); 
+            } else { 
+                aggregateParser += x; 
+            }
+        }
+        else {
+            if (javaLogParser::getDebug ()) { 
+                cout << "Aggregate not selected, iterating through options to print, serialize, dump, etc" << endl; 
+                cout << "\t\tFilters: " << javaLogParser::getFilters () << endl;
+                cout << "\t\tDebug: " << javaLogParser::getDebug () << endl;
+                cout << "\t\tDump:  " << javaLogParser::getDump () << endl;
+                cout << "\t\tSerialize: " << javaLogParser::getSerialize () << endl;
+                cout << "\t\tStats: " << javaLogParser::getStats () << endl;
+            }
+
+            if (javaLogParser::getDump ()) { x.dumpElements (); } 
+            if (javaLogParser::getSerialize ()) { x.serializeData (); }
+            if (javaLogParser::getStats ()) { x.printStats (); }
+        }
+        y++;
+    }
+
+    if (javaLogParser::getAggregate ()) {
+            if (javaLogParser::getDebug ()) { cout << "Dumping Aggregated javaLogParser Data" << endl; }
+            if (javaLogParser::getDump ()) { aggregateParser.dumpElements (); }
+            if (javaLogParser::getSerialize ()) { aggregateParser.serializeData (); }
+            if (javaLogParser::getStats ()) { aggregateParser.printStats (); }
     }
 }

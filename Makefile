@@ -1,5 +1,5 @@
 CC			= c++
-CFLAGS		= -O3 -ggdb3 -g -Wall
+CFLAGS		= -O3 -ggdb3 -g -Wall 
 TARGET		= jlp
 OUT_DIR		= ./bin/
 LOGS_DIR	= ./logs/

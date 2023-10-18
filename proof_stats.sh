@@ -1,6 +1,6 @@
 #!/usr/bin/bash
 
-filename="jenkins.log"
+filename="jenkins.log.bak"
 
 jlp -asp "${filename}" | egrep 'Lines:|Entries|Processed|Duration'
 
