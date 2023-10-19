@@ -3,6 +3,7 @@
 #include <iterator>
 #include <sstream>
 #include <iostream>
+#include <sstream>
 #include <string>
 #include <cstring>
 #include <vector>
@@ -27,8 +28,11 @@
 #include <boost/algorithm/string/classification.hpp> // Include boost::for is_any_of
 #include <boost/algorithm/string/split.hpp> // Include for boost::split
 
-// Custom Inclusions: 
-#include "jlp.h"        // Class Defs;
+// Custom Inclusions (Are these needed to be included here or is in their respective class.h file appropriate? lets find out); 
+#include "javaStackTrace.h"
+#include "javaLogEntry.h"
+#include "javaLogParser.h"        // Class Defs;
+
 
 // Namespacing: 
 using namespace boost;
@@ -42,6 +46,21 @@ bool javaLogParser::serialize;
 bool javaLogParser::dump; 
 bool javaLogParser::stats;
 string javaLogParser::filters;
+
+/*
+bool getDebug ();
+bool setDebug (bool dbg);
+bool getDump();
+bool setDump (bool dmp);
+bool getAggregate ();
+bool setAggregate (bool agg);
+bool getSerialize ();
+bool setSerialize (bool ser);
+bool getStats();
+bool setStats (bool ser);
+string getFilters ();
+string setFilters (string fltrs);
+*/
 
 int main(int argc, char * argv[])
 {
