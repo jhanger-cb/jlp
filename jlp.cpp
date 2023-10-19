@@ -29,7 +29,6 @@
 
 // Custom Inclusions: 
 #include "jlp.h"        // Class Defs;
-#include "clip.h"       // Command Line Parsing;  // Replacing with boost; 
 
 // Namespacing: 
 using namespace boost;

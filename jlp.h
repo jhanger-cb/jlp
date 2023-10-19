@@ -193,6 +193,8 @@ public:
         this->traceEntries = source.traceEntries;
         this->unknownEntries = source.unknownEntries;
         this->warningEntries = source.warningEntries;
+        this->initFileNames ();
+
     }
 
     javaLogParser () {
@@ -212,25 +214,8 @@ public:
         this->traceCount = 0;
         this->unknownCount = 0;
         this->warningCount = 0; 
-        // Logging Output Vars
-        this->base_dir = "logs/";
-        this->ule_log = "";
-        this->uste_log = "";
-        this->stats_log = "";
-        this->all_log = "";
-        this->debug_log = "";
-        this->error_log = "";
-        this->fatal_log = "";
-        this->fine_log = "";
-        this->finer_log = "";
-        this->finest_log = "";
-        this->info_log = "";
-        this->off_log = "";
-        this->severe_log = "";
-        this->trace_log = "";
-        this->warning_log = "";
-        this->unknown_log = "";
-        this->fst_log = "";
+        this->initFileNames ();
+
     }
  
     ~javaLogParser () {
@@ -269,6 +254,22 @@ public:
         for (auto x : source.logEntries) {
             this->logEntries.push_back (x);
         }
+        this->messageEntries = source.messageEntries;
+        this->allEntries = source.allEntries;
+        this->debugEntries = source.debugEntries;
+        this->errorEntries = source.errorEntries;
+        this->fatalEntries = source.fatalEntries;
+        this->fineEntries = source.fineEntries;
+        this->finerEntries = source.finerEntries;
+        this->finestEntries = source.finestEntries;
+        this->infoEntries = source.infoEntries;
+        this->offEntries = source.offEntries;
+        this->severeEntries = source.severeEntries;
+        this->stackTraceEntries = source.stackTraceEntries;
+        this->traceEntries = source.traceEntries;
+        this->unknownEntries = source.unknownEntries;
+        this->warningEntries = source.warningEntries;
+
         return *this;
     }
 

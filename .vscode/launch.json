@@ -9,7 +9,7 @@
             "type": "cppdbg",
             "request": "launch",
             "program": "/cbsupport/src/cpp/jlp/bin/jlp",
-            "args": ["-bsp", "jenkins.log.bak1"],
+            "args": ["-bsp", "jenkins.log.bak"],
             "stopAtEntry": false,
             "cwd": "${fileDirname}",
             "environment": [],
