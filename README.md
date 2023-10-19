@@ -1,4 +1,7 @@
 # jlp - C++ based log parser for Java Logs
+
+# Releases: 
+  *  v0.1 - First Stable Release:
 ## Java Log Parser
 
 ### By Default starting with Jenkins typical Log File Formats as this is what this solution stems from: 
