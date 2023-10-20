@@ -1,11 +1,15 @@
 cmake_minimum_required(VERSION 3.27.7)
 project(jlp 
-  VERSION 0.1.0 
+  VERSION 0.2.0 
   DESCRIPTION "Java Log Parser")
 if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release)
 endif()
 
+configure_file("config.h.in" "config.h")
+include_directories(${PROJECT_BINARY_BIN}) 
+
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "bin/")
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
@@ -23,4 +27,3 @@ if(Boost_FOUND)
     add_executable(jlp main.cpp javaLogParser.cpp javaLogEntry.cpp javaStackTrace.cpp)
     target_link_libraries(jlp ${Boost_LIBRARIES})
 endif()
-

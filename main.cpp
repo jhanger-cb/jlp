@@ -29,6 +29,7 @@
 #include <boost/algorithm/string/split.hpp> // Include for boost::split
 
 // Custom Inclusions (Are these needed to be included here or is in their respective class.h file appropriate? lets find out); 
+#include "config.h"
 #include "javaStackTrace.h"
 #include "javaLogEntry.h"
 #include "javaLogParser.h"        // Class Defs;
@@ -46,21 +47,6 @@ bool javaLogParser::serialize;
 bool javaLogParser::dump; 
 bool javaLogParser::stats;
 string javaLogParser::filters;
-
-/*
-bool getDebug ();
-bool setDebug (bool dbg);
-bool getDump();
-bool setDump (bool dmp);
-bool getAggregate ();
-bool setAggregate (bool agg);
-bool getSerialize ();
-bool setSerialize (bool ser);
-bool getStats();
-bool setStats (bool ser);
-string getFilters ();
-string setFilters (string fltrs);
-*/
 
 int main(int argc, char * argv[])
 {
@@ -86,7 +72,8 @@ int main(int argc, char * argv[])
     ("dump,d", "Print out the raw data.")
     ("serialize,s", "Save the aggregated data.")
     ("print-stats,-p", "Print Statistics Summary.")
-    ("debug,-b", "Print DEBUG log info");
+    ("debug,-b", "Print DEBUG log info")
+    ("version,-v", "Print Version info");
 
     positional_options_description p;
     p.add("input-file", -1);
@@ -148,6 +135,10 @@ int main(int argc, char * argv[])
         }
         if (o.string_key == "debug") {
             javaLogParser::setDebug (true); 
+        }
+        if (o.string_key == "version") {
+            cout << PROJECT_NAME << " " << PROJECT_VER << endl;
+            return 0;
         }
     }
     
