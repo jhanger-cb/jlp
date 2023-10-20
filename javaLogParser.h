@@ -41,8 +41,10 @@ private:
     time_t pStart = time(nullptr);
     time_t pEnd = time(nullptr); 
 
-    unordered_map<string, int> messageEntries, allEntries, debugEntries, errorEntries, fatalEntries, fineEntries, finerEntries, finestEntries, infoEntries, offEntries, severeEntries, stackTraceEntries, traceEntries, unknownEntries, warningEntries; 
+    unordered_map<string, int> messageEntries, allEntries, debugEntries, errorEntries, fatalEntries, fineEntries, finerEntries, finestEntries, infoEntries, offEntries, severeEntries,  stackTraceLineEntries, traceEntries, unknownEntries, warningEntries; 
 
+    unordered_map<javaStackTrace, int, javaStackHash> stackTraceEntries;
+    
     // Line Item Specific Variables;
     string line;
     ifstream fh;

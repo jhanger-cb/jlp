@@ -29,8 +29,9 @@
 #include <boost/algorithm/string/split.hpp> // Include for boost::split
 
 // Custom Inclusions (Are these needed to be included here or is in their respective class.h file appropriate? lets find out); 
+#include "javaStackTrace.h"
 #include "javaLogEntry.h"
-#include "javaLogParser.h"        // javaLogParser;
+#include "javaLogParser.h"
 
 // Namespacing: 
 using namespace boost;
@@ -140,7 +141,7 @@ javaLogParser::javaLogParser (const javaLogParser& source) {
     this->infoEntries = source.infoEntries;
     this->offEntries = source.offEntries;
     this->severeEntries = source.severeEntries;
-    this->stackTraceEntries = source.stackTraceEntries;
+    this->stackTraceLineEntries = source.stackTraceLineEntries;
     this->traceEntries = source.traceEntries;
     this->unknownEntries = source.unknownEntries;
     this->warningEntries = source.warningEntries;
@@ -194,8 +195,8 @@ javaLogParser& javaLogParser::operator +=(javaLogParser const &source) {
     if(this->pEnd < source.pEnd) { this->pEnd = source.pEnd; } 
 
     // Add Maps Items: 
-    for (auto x : source.stackTraceEntries) {
-        this->stackTraceEntries[x.first] += x.second;  
+    for (auto x : source.stackTraceLineEntries) {
+        this->stackTraceLineEntries[x.first] += x.second;  
     }
     for (auto x : source.messageEntries) {
         this->messageEntries[x.first] += x.second;  
@@ -216,7 +217,7 @@ javaLogParser& javaLogParser::operator +=(javaLogParser const &source) {
     this->infoEntries = source.infoEntries;
     this->offEntries = source.offEntries;
     this->severeEntries = source.severeEntries;
-    this->stackTraceEntries = source.stackTraceEntries;
+    this->stackTraceLineEntries = source.stackTraceLineEntries;
     this->traceEntries = source.traceEntries;
     this->unknownEntries = source.unknownEntries;
     this->warningEntries = source.warningEntries;
@@ -299,14 +300,14 @@ void javaLogParser::addStackItem (string line) {
     istringstream ss(line);
     string firstWord, traceItem; 
     ss >> firstWord;
-    if (firstWord != "at"){
+    if (firstWord != "at" || firstWord != "Caused:"){
         string tmp; 
         getline(ss,tmp);
         traceItem = firstWord + tmp;
     } else {
         getline(ss,traceItem);
     }
-    stackTraceEntries[traceItem]++;
+    stackTraceLineEntries[traceItem]++;
 }
 
 void javaLogParser::dumpElements () {
@@ -315,11 +316,11 @@ void javaLogParser::dumpElements () {
     }
 
     // Order the unordered_maps; 
-    multimap<int, string> stackTraceEntriesOrdered; 
+    multimap<int, string> stackTraceLineEntriesOrdered; 
     multimap<int, string> messageEntriesOrdered; 
     multimap<int, string> severeEntriesOrdered; 
-    for (auto x : stackTraceEntries) {
-        stackTraceEntriesOrdered.insert(pair<int, string>(x.second, x.first));
+    for (auto x : stackTraceLineEntries) {
+        stackTraceLineEntriesOrdered.insert(pair<int, string>(x.second, x.first));
     }
     for (auto x : messageEntries) {
         messageEntriesOrdered.insert(pair<int, string>(x.second, x.first));
@@ -334,7 +335,7 @@ void javaLogParser::dumpElements () {
     // Iterate them reversely: 
     
     cout << this->header(string("Unique Stack Trace Entries")); 
-    for (it = stackTraceEntriesOrdered.rbegin(); it != stackTraceEntriesOrdered.rend(); it++) {
+    for (it = stackTraceLineEntriesOrdered.rbegin(); it != stackTraceLineEntriesOrdered.rend(); it++) {
         cout << it->first << " " << it->second << endl;
     }
     cout << this->header(string("Unique Log Entry Messages"));
@@ -353,7 +354,7 @@ vector<string> javaLogParser::generateStats () {
     int elements = this->lineCount;
     stats.push_back ("\tLines:\t\t\t\t" + to_string(elements) + "\n");
     stats.push_back ("\tStack Trace Lines:\t\t" + to_string(stackTraceCount) + "\n"); 
-    stats.push_back ("\tUniq Stack Trace Items:\t\t" + to_string(stackTraceEntries.size ()) + "\n");
+    stats.push_back ("\tUniq Stack Trace Items:\t\t" + to_string(stackTraceLineEntries.size ()) + "\n");
     stats.push_back ("\tUniq Log Entry Items:\t\t" + to_string(messageEntries.size ()) + "\n");
     // Suppress 0 value Entries to remove noisy output; 
     if(allCount != 0){ stats.push_back ("\t\tALL Entries:\t\t" + to_string(allCount) + "\n"); }
@@ -516,6 +517,11 @@ void javaLogParser::processFile() {
             getline(this->ss, this->message);  // Get remaining line entries as one object; 
             this->messageEntries[this->message]++;
             addCounterMetrics (this->logLevel);
+            // Check if previous javaLogEntry contained a stack trace, if true ? push : continue;
+            vector<javaLogEntry>::iterator i_lastEntry = logEntries.end () -2;
+            if (i_lastEntry->containsStackTrace) {
+                this->stackTraceEntries.insert ((i_lastEntry->jstPtr, i_lastEntry));
+            }
         }
         else {
             //  Recursively add/pop line to previous javaLogEntry into stack trace vector; 
@@ -572,19 +578,31 @@ void javaLogParser::serializeData() {
     }
 
     ofstream usteLogFile(this->base_dir + this->uste_log); 
-    multimap<int, string> stackTraceEntriesOrdered;
+    /*
+    multimap<int, javaStackTrace> stackTraceEntriesOrdered;
     for (auto x : stackTraceEntries) {
-        stackTraceEntriesOrdered.insert(pair<int, string>(x.second, x.first));
+        stackTraceEntriesOrdered.insert(pair<int, javaStackTrace>(x.second, x.first));
     }
+    */
 
-    ofstream statsLogFile(this->base_dir + this->stats_log);
 
     // Iterate them reversely: 
     
-    usteLogFile << this->header(" Unique Stack Trace Line Items ");
-    for (it = stackTraceEntriesOrdered.rbegin(); it != stackTraceEntriesOrdered.rend(); it++) {
-        usteLogFile << it->first << " " << it->second << endl;
+    usteLogFile << this->header(" Unique Stack Trace Entries");
+    /*
+    int cntr = 0;
+    for (auto x : stackTraceEntries) {
+        javaStackTrace idx = x.first;
+        cout << "DEBUG: idx.liPtr.size(): " << idx.liPtr->size () << endl;
+        for (auto y : *idx.liPtr) {
+            if (cntr == 0) {
+                usteLogFile << x.second << " " << y << endl;
+            } else {
+                usteLogFile << y << endl;
+            }
+        }
     }
+    */
 
     uleLogFile << this->header(" Unique Log Entry Messages ");
     for (it = messageEntriesOrdered.rbegin(); it != messageEntriesOrdered.rend(); it++) {
@@ -592,6 +610,7 @@ void javaLogParser::serializeData() {
     }
 
     // Generate stats and iterate the stats vector; 
+    ofstream statsLogFile(this->base_dir + this->stats_log);
     statsLogFile << this->header(" Java Log Parsing Statsistics ");
     vector<string> stats = this->generateStats ();
     for (sit = stats.begin(); sit != stats.end(); ++sit) {

@@ -11,9 +11,8 @@ using namespace std;
 
 class javaLogEntry {
 private:
-    bool containsStackTrace     = false;
     vector<string> lines        = {};
-    vector<string> stackTrace   = {}; 
+    javaStackTrace stackTrace; 
 
     // Line Item Variables; 
     string fileName             = "";
@@ -26,13 +25,15 @@ private:
     string message              = ""; 
 
 public:
+    javaStackTrace* jstPtr      = &stackTrace;
+    bool containsStackTrace     = false;
     javaLogEntry ();
     javaLogEntry (string ln);
     javaLogEntry (javaLogEntry const &logEntry);
     void dumpElements ();
     string getLine ();
     string getMessage ();
-    vector<string> getStackTrace ();
+    javaStackTrace getStackTrace ();
     bool isStackTrace (string firstWord);
     void pushST (string li);
 };

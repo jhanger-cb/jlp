@@ -4,12 +4,24 @@
 #include <ostream>
 #include "javaStackTrace.h"
 
+javaStackTrace::javaStackTrace () {
+}
+
 javaStackTrace::javaStackTrace (string ln) {
+    this->headLine = ln;
     this->lineItems.push_back(ln);
 }
 
 javaStackTrace::javaStackTrace (javaStackTrace const &jst) {
-    this->lineItems = jst.lineItems;
+    this->headLine              = jst.headLine;
+    /*
+    for ( auto x : jst.lineItems) {
+        this->lineItems.push_back(x);
+    }*/
+    this->caused                = jst.caused;
+    this->exception             = jst.exception;
+    this->exceptionMsg          = jst.exceptionMsg;
+    this->exceptionMsgDetails   = jst.exceptionMsgDetails;
 }
 
 void javaStackTrace::dumpElements () {
@@ -18,10 +30,25 @@ void javaStackTrace::dumpElements () {
     }
 }
 
-vector<string> javaStackTrace::getStackTrace () {
-    return this->lineItems;
+vector<string>* javaStackTrace::getStackTrace () const {
+    return this->liPtr;
 }
 
-void javaStackTrace::addLineItem (string lineItem) {
+void javaStackTrace::push_back (string lineItem) {
     lineItems.push_back (lineItem);
+}
+
+bool javaStackTrace::operator== (const javaStackTrace &jst) const {
+    if (this->lineItems.size() != jst.liPtr->size ()) {
+        return false;
+    } else {
+        //(this->lineItems == jst.lineItems) ? return true : return false; 
+        int y = 0;
+        bool ret = false;
+        for (auto x : this->lineItems) {
+            (x == jst.lineItems[y]) ? ret = true : ret = false;
+        }
+        return ret;
+    }
+    return true;
 }

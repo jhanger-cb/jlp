@@ -3,10 +3,11 @@
 #include <iostream>
 #include <ostream>
 #include <sstream>
+#include "javaStackTrace.h"
 #include "javaLogEntry.h"
 
 javaLogEntry::javaLogEntry () {
-    lines = stackTrace = {};
+    lines = {};
 }
 
 javaLogEntry::javaLogEntry (string ln) {
@@ -24,8 +25,8 @@ javaLogEntry::javaLogEntry (string ln) {
 
 javaLogEntry::javaLogEntry (javaLogEntry const &logEntry) {
     this->containsStackTrace    = logEntry.containsStackTrace;
-    this->lines                 = logEntry.lines;                               // probably need to iter item.add(...)
-    this->stackTrace            = logEntry.stackTrace;                     // "
+    this->lines                 = logEntry.lines;
+    this->stackTrace            = logEntry.stackTrace;
     this->fileName              = logEntry.fileName;
     this->line                  = logEntry.line;
     this->timestamp             = logEntry.timestamp;
@@ -38,9 +39,7 @@ void javaLogEntry::dumpElements () {
     for ( long unsigned int i=0; i < lines.size(); i++) {
         cout << lines[i] << endl;
     }
-    for ( long unsigned int i=0; i< stackTrace.size(); i++) {
-        cout << stackTrace[i] << endl;
-    }
+    stackTrace.dumpElements();
 }
 
 string javaLogEntry::getLine () {
@@ -51,8 +50,8 @@ string javaLogEntry::getMessage () {
     return this->message;
 }
 
-vector<string> javaLogEntry::getStackTrace () {
-    return stackTrace;
+javaStackTrace javaLogEntry::getStackTrace () {
+    return this->stackTrace;
 }
 
 bool javaLogEntry::isStackTrace (string firstWord) {
