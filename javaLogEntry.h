@@ -31,9 +31,9 @@ public:
     javaLogEntry (string ln);
     javaLogEntry (javaLogEntry const &logEntry);
     void dumpElements ();
-    string getLine ();
+    vector<string>* getLines ();
     string getMessage ();
-    javaStackTrace getStackTrace ();
+    javaStackTrace& getStackTrace ();
     bool isStackTrace (string firstWord);
-    void pushST (string li);
+    void push_back (string lineItem);
 };

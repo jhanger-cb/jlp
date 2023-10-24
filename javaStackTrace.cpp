@@ -14,10 +14,9 @@ javaStackTrace::javaStackTrace (string ln) {
 
 javaStackTrace::javaStackTrace (javaStackTrace const &jst) {
     this->headLine              = jst.headLine;
-    /*
     for ( auto x : jst.lineItems) {
         this->lineItems.push_back(x);
-    }*/
+    }
     this->caused                = jst.caused;
     this->exception             = jst.exception;
     this->exceptionMsg          = jst.exceptionMsg;
@@ -51,4 +50,12 @@ bool javaStackTrace::operator== (const javaStackTrace &jst) const {
         return ret;
     }
     return true;
+}
+
+ostream& operator << (ostream &out, const javaStackTrace &jst) {
+    for (size_t i=0; i<jst.liPtr[0].size(); i++) {
+        //out << jst.liPtr[i];
+        out << "" << jst.liPtr[0][i] << endl; //<< "\n" << jst.liPtr[i];
+    }
+    return out; 
 }

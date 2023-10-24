@@ -14,6 +14,7 @@
 #include <unordered_map> 
 #include <thread> 
 #include <set> 
+#include <algorithm>
 
 // Non-STL standard libraries:
 #include <sys/stat.h>
@@ -47,6 +48,28 @@ bool javaLogParser::serialize;
 bool javaLogParser::dump; 
 bool javaLogParser::stats;
 string javaLogParser::filters;
+
+string escaped(const string& input)
+{
+    string output;
+    output.reserve(input.size());
+    for (const char c: input) {
+        switch (c) {
+            case '\a':  output += "\\a";        break;
+            case '\b':  output += "\\b";        break;
+            case '\f':  output += "\\f";        break;
+            case '\n':  output += "\\n";        break;
+            case '\r':  output += "\\r";        break;
+            case '\t':  output += "\\t";        break;
+            case '\v':  output += "\\v";        break;
+            case '/':  output += "_";        break;
+            default:    output += c;            break;
+        }
+    }
+
+    return output;
+}
+
 
 int main(int argc, char * argv[])
 {
@@ -170,9 +193,11 @@ int main(int argc, char * argv[])
     for (auto x : fileNames) {
         for (auto y: x) {
             filename = y;
+            /*
             regex re(" ", regex_constants::match_any); 
+            filename.replace(filename.begin(), filename.end(), "\\/", "/");
             filename = regex_replace(filename, re, "\\ ");
-            re = regex("/", regex_constants::match_any); 
+            re = regex("", regex_constants::match_any); 
             filename = regex_replace(filename, re, "\\/");
             re = regex("#", regex_constants::match_any); 
             filename = regex_replace(filename, re, "\\#");
@@ -180,6 +205,7 @@ int main(int argc, char * argv[])
             filename = regex_replace(filename, re, "\\$");
             re = regex("\\", regex_constants::match_any); 
             filename = regex_replace(filename, re, "\\\\");
+            */
 
             if (javaLogParser::getDebug ()) { cout << "DEBUG:\n\tx: " << x.size () << "\n\tj: " << y.size() << "\n\tfilename: " << filename << "\n\tAggregation is: " << javaLogParser::getAggregate () << "\n\tDebug is " << javaLogParser::getDebug () << endl; }
             vlogParsers.push_back (javaLogParser(filename));
@@ -194,7 +220,7 @@ int main(int argc, char * argv[])
     // Override Aggregates Setting if more than one file presented to -i or positionally on cli; 
     if(fileNames.size() > 1) { 
         javaLogParser::setAggregate(true); 
-        if (javaLogParser::getDebug) { cout << "DEBUG: Overrode Aggregate Option: new value TRUE" << endl; }
+        if (javaLogParser::getDebug ()) { cout << "DEBUG: Overrode Aggregate Option: new value TRUE" << endl; }
         
     } else {
         javaLogParser::setAggregate(false); // No reason to have aggregation option set when there is only 1 file; 

@@ -42,15 +42,15 @@ void javaLogEntry::dumpElements () {
     stackTrace.dumpElements();
 }
 
-string javaLogEntry::getLine () {
-    return this->line; 
+vector<string>* javaLogEntry::getLines () {
+    return &this->lines; 
 }
 
 string javaLogEntry::getMessage () {
     return this->message;
 }
 
-javaStackTrace javaLogEntry::getStackTrace () {
+javaStackTrace& javaLogEntry::getStackTrace () {
     return this->stackTrace;
 }
 
@@ -69,6 +69,7 @@ bool javaLogEntry::isStackTrace (string firstWord) {
     }
 }
 
-void javaLogEntry::pushST (string li) {
-    stackTrace.push_back (li);
+void javaLogEntry::push_back (string lineItem) {
+    this->lines.push_back (lineItem);
+    this->stackTrace.push_back (lineItem);
 }

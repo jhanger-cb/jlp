@@ -49,6 +49,7 @@ public:
     void push_back(string lineItem);
     vector<string>* getStackTrace () const;
     bool operator== (const javaStackTrace &jst) const;
+    friend ostream& operator<< (ostream &out, const javaStackTrace &jst);
 };
 
 // In order to create an unordered_map object we have to create helper hash class;
@@ -57,6 +58,11 @@ public:
 class javaStackHash {
 public: 
     size_t operator()(const javaStackTrace& jst) const {
-        return jst.liPtr->size ();
+        size_t cumulative; 
+        for (auto x : *jst.liPtr) {
+            cumulative += x.size();
+        }
+        if(!cumulative) { cumulative = 0; }
+        return cumulative;
     }
 };

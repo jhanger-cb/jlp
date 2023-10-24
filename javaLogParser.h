@@ -124,4 +124,5 @@ public:
     void processFile();
     javaLogEntry processLine(string line, bool stackTrace = false);
     void serializeData();
+    string escaped(const string& input);
 };

@@ -348,6 +348,25 @@ void javaLogParser::dumpElements () {
     }
 }
 
+string javaLogParser::escaped(const string& input) {
+    string output;
+    output.reserve(input.size());
+    for (const char c: input) {
+        switch (c) {
+            case '\a':  output += "\\a";        break;
+            case '\b':  output += "\\b";        break;
+            case '\f':  output += "\\f";        break;
+            case '\n':  output += "\\n";        break;
+            case '\r':  output += "\\r";        break;
+            case '\t':  output += "\\t";        break;
+            case '\v':  output += "\\v";        break;
+            case '/':  output += "_";        break;
+            default:    output += c;            break;
+        }
+    }
+
+    return output;
+}
 
 vector<string> javaLogParser::generateStats () {
     vector<string> stats; 
@@ -429,7 +448,7 @@ void javaLogParser::initFileNames () {
     if (this->aggregate) {
         prefix = "aggregate"; 
     } else {
-        prefix = this->fileName;
+        prefix = this->escaped(this->fileName);
     }
     if(javaLogParser::getDebug ()) { cout << "DEBUG: aggregate tested: " << prefix << "\t agg: " << this->aggregate << endl; }
     this->base_dir      = "logs/";
@@ -510,7 +529,6 @@ void javaLogParser::processFile() {
         
         if (!this->isStackTrace(firstWord)) {
             this->date = firstWord;
-            regex re("^[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]");
             javaLogEntry logEntry = this->processLine(line);
             this->logEntries.push_back(logEntry); 
             this->ss >> this->timestamp >> this->id >> this->logLevel; 
@@ -518,9 +536,10 @@ void javaLogParser::processFile() {
             this->messageEntries[this->message]++;
             addCounterMetrics (this->logLevel);
             // Check if previous javaLogEntry contained a stack trace, if true ? push : continue;
-            vector<javaLogEntry>::iterator i_lastEntry = logEntries.end () -2;
+            vector<javaLogEntry>::iterator i_lastEntry = logEntries.end () -1;
             if (i_lastEntry->containsStackTrace) {
-                this->stackTraceEntries.insert ((i_lastEntry->jstPtr, i_lastEntry));
+                if (javaLogParser::getDebug ()) { cout << "Adding Stack Trace to unordered map" << endl; }
+                this->stackTraceEntries[*i_lastEntry->jstPtr]++; // .insert (pair<javaStackTrace, int>(i_lastEntry->jstPtr, i_lastEntry));
             }
         }
         else {
@@ -546,13 +565,12 @@ javaLogEntry javaLogParser::processLine(string line, bool stackTrace) {
         this->addStackItem(line); // add stack trace line to unique stack trace line items unordered_map; 
 
         int sz = this->logEntries.size ();
-
         if(sz == 0) {
             javaLogEntry logEntry (line);
             return logEntry;
         } else {
             javaLogEntry logEntry (this->logEntries[sz -1]);  // -1 is important, causes core dump cuase itr is past last entry of vector; 
-            logEntry.pushST(line);
+            logEntry.push_back(line);
 
             return logEntry;
         }
@@ -565,51 +583,45 @@ void javaLogParser::serializeData() {
     //  <log_name> uste.log     -> Uniq Stack Trace Entries (Ordered most occurring to least)
     //  <log_name>_stats.log    -> stats () / metrics (); 
     
+    if (javaLogParser::getDebug()) { cout << "Serializing Data" << endl; }
     // Create reverse multimap iterator
     multimap<int, string>::reverse_iterator it;
     // Create string iterator; 
     vector<string>::iterator sit;
 
     // These will always output on serialize; 
+
+    /**********************
+     * uleLogFile: Uniq Log Entries
+    */
     ofstream uleLogFile(this->base_dir + this->ule_log); 
     multimap<int, string> messageEntriesOrdered;
     for (auto x : messageEntries) {
-        messageEntriesOrdered.insert(pair<int, string>(x.second, x.first));
+        messageEntriesOrdered.insert (pair<int, string>(x.second, x.first));
     }
-
-    ofstream usteLogFile(this->base_dir + this->uste_log); 
-    /*
-    multimap<int, javaStackTrace> stackTraceEntriesOrdered;
-    for (auto x : stackTraceEntries) {
-        stackTraceEntriesOrdered.insert(pair<int, javaStackTrace>(x.second, x.first));
-    }
-    */
-
-
-    // Iterate them reversely: 
-    
-    usteLogFile << this->header(" Unique Stack Trace Entries");
-    /*
-    int cntr = 0;
-    for (auto x : stackTraceEntries) {
-        javaStackTrace idx = x.first;
-        cout << "DEBUG: idx.liPtr.size(): " << idx.liPtr->size () << endl;
-        for (auto y : *idx.liPtr) {
-            if (cntr == 0) {
-                usteLogFile << x.second << " " << y << endl;
-            } else {
-                usteLogFile << y << endl;
-            }
-        }
-    }
-    */
-
     uleLogFile << this->header(" Unique Log Entry Messages ");
     for (it = messageEntriesOrdered.rbegin(); it != messageEntriesOrdered.rend(); it++) {
         uleLogFile << it->first << " " << it->second << endl;
     }
 
+    /**********************
+     * usteLogFile: Uniq Stack Trace Entries
+    */
+    ofstream usteLogFile(this->base_dir + this->uste_log); 
+    if (javaLogParser::getDebug ()) { cout << "Uniq Stack Trace Log: " << this->base_dir + this->uste_log << endl; }
+    multimap<int, javaStackTrace> stackTraceEntriesOrdered;
+    for (auto x : stackTraceEntries) {
+        stackTraceEntriesOrdered.insert(pair<int, javaStackTrace>(x.second, x.first));
+    }
+    usteLogFile << this->header(" Unique Stack Trace Entries");
+    for (auto x : stackTraceEntriesOrdered) {
+        usteLogFile << x.first << " " << x.second << endl;
+    }
+
     // Generate stats and iterate the stats vector; 
+    /**********************
+     * statsLogFile: Log File Parsing Statistics
+    */
     ofstream statsLogFile(this->base_dir + this->stats_log);
     statsLogFile << this->header(" Java Log Parsing Statsistics ");
     vector<string> stats = this->generateStats ();
