@@ -49,26 +49,6 @@ bool javaLogParser::dump;
 bool javaLogParser::stats;
 string javaLogParser::filters;
 
-string escaped(const string& input)
-{
-    string output;
-    output.reserve(input.size());
-    for (const char c: input) {
-        switch (c) {
-            case '\a':  output += "\\a";        break;
-            case '\b':  output += "\\b";        break;
-            case '\f':  output += "\\f";        break;
-            case '\n':  output += "\\n";        break;
-            case '\r':  output += "\\r";        break;
-            case '\t':  output += "\\t";        break;
-            case '\v':  output += "\\v";        break;
-            case '/':  output += "_";        break;
-            default:    output += c;            break;
-        }
-    }
-
-    return output;
-}
 
 
 int main(int argc, char * argv[])
@@ -193,26 +173,12 @@ int main(int argc, char * argv[])
     for (auto x : fileNames) {
         for (auto y: x) {
             filename = y;
-            /*
-            regex re(" ", regex_constants::match_any); 
-            filename.replace(filename.begin(), filename.end(), "\\/", "/");
-            filename = regex_replace(filename, re, "\\ ");
-            re = regex("", regex_constants::match_any); 
-            filename = regex_replace(filename, re, "\\/");
-            re = regex("#", regex_constants::match_any); 
-            filename = regex_replace(filename, re, "\\#");
-            re = regex("$", regex_constants::match_any); 
-            filename = regex_replace(filename, re, "\\$");
-            re = regex("\\", regex_constants::match_any); 
-            filename = regex_replace(filename, re, "\\\\");
-            */
 
             if (javaLogParser::getDebug ()) { cout << "DEBUG:\n\tx: " << x.size () << "\n\tj: " << y.size() << "\n\tfilename: " << filename << "\n\tAggregation is: " << javaLogParser::getAggregate () << "\n\tDebug is " << javaLogParser::getDebug () << endl; }
             vlogParsers.push_back (javaLogParser(filename));
             if (javaLogParser::getDebug ()) { cout << "DEBUG: jlp created; pushing on stack;" << endl; }
             //vlogParsers.push_back (jlp);
             if (javaLogParser::getDebug ()) { cout << "DEBUG: jlp pushed" << endl; }
-
         }
     }
 
@@ -243,7 +209,7 @@ int main(int argc, char * argv[])
         }
         else {
             if (javaLogParser::getDebug ()) { 
-                cout << "Aggregate not selected, iterating through options to print, serialize, dump, etc" << endl; 
+                cout << "DEBUG: Aggregate not selected, iterating through options to print, serialize, dump, etc" << endl; 
                 cout << "\t\tFilters: " << javaLogParser::getFilters () << endl;
                 cout << "\t\tDebug: " << javaLogParser::getDebug () << endl;
                 cout << "\t\tDump:  " << javaLogParser::getDump () << endl;

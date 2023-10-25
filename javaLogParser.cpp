@@ -38,8 +38,6 @@ using namespace boost;
 using namespace boost::program_options;
 using namespace std;
 
-
-
 bool javaLogParser::getDebug () {
     return javaLogParser::debug;
 }
@@ -113,40 +111,40 @@ javaLogParser::javaLogParser (string fileName) {
 javaLogParser::javaLogParser (const javaLogParser& source) {
     if(this->pStart > source.pStart) { this->pStart = source.pStart; }
     if(this->pEnd < source.pEnd) { this->pEnd = source.pEnd; } 
-    this->fileName =  source.fileName; 
-    this->lineCount = source.lineCount;
-    this->allCount = source.allCount;
-    this->debugCount = source.debugCount;
-    this->errorCount = source.errorCount;
-    this->fatalCount = source.fatalCount;
-    this->fineCount = source.fineCount;
-    this->finerCount = source.finerCount;
-    this->finestCount = source.finestCount;
-    this->infoCount = source.infoCount;
-    this->offCount = source.offCount;
-    this->severeCount = source.severeCount;
-    this->stackTraceCount = source.stackTraceCount;
-    this->traceCount = source.traceCount;
-    this->unknownCount = source.unknownCount;
-    this->warningCount = source.warningCount; 
+    this->fileName				=  source.fileName; 
+    this->lineCount				= source.lineCount;
+    this->allCount				= source.allCount;
+    this->debugCount			= source.debugCount;
+    this->errorCount			= source.errorCount;
+    this->fatalCount			= source.fatalCount;
+    this->fineCount				= source.fineCount;
+    this->finerCount			= source.finerCount;
+    this->finestCount		    = source.finestCount;
+    this->infoCount				= source.infoCount;
+    this->offCount				= source.offCount;
+    this->severeCount			= source.severeCount;
+    this->stackTraceCount		= source.stackTraceCount;
+    this->traceCount			= source.traceCount;
+    this->unknownCount			= source.unknownCount;
+    this->warningCount			= source.warningCount; 
     // Add Maps Items: 
-    this->messageEntries = source.messageEntries;
-    this->allEntries = source.allEntries;
-    this->debugEntries = source.debugEntries;
-    this->errorEntries = source.errorEntries;
-    this->fatalEntries = source.fatalEntries;
-    this->fineEntries = source.fineEntries;
-    this->finerEntries = source.finerEntries;
-    this->finestEntries = source.finestEntries;
-    this->infoEntries = source.infoEntries;
-    this->offEntries = source.offEntries;
-    this->severeEntries = source.severeEntries;
+    this->messageEntries		= source.messageEntries;
+    this->allEntries			= source.allEntries;
+    this->debugEntries			= source.debugEntries;
+    this->errorEntries			= source.errorEntries;
+    this->fatalEntries			= source.fatalEntries;
+    this->fineEntries			= source.fineEntries;
+    this->finerEntries			= source.finerEntries;
+    this->finestEntries			= source.finestEntries;
+    this->infoEntries			= source.infoEntries;
+    this->offEntries			= source.offEntries;
+    this->severeEntries			= source.severeEntries;
+    this->stackTraceEntries		= source.stackTraceEntries;
     this->stackTraceLineEntries = source.stackTraceLineEntries;
-    this->traceEntries = source.traceEntries;
-    this->unknownEntries = source.unknownEntries;
-    this->warningEntries = source.warningEntries;
+    this->traceEntries			= source.traceEntries;
+    this->unknownEntries		= source.unknownEntries;
+    this->warningEntries		= source.warningEntries;
     this->initFileNames ();
-
 }
 
 javaLogParser::javaLogParser () {
@@ -206,21 +204,23 @@ javaLogParser& javaLogParser::operator +=(javaLogParser const &source) {
     for (auto x : source.logEntries) {
         this->logEntries.push_back (x);
     }
-    this->messageEntries = source.messageEntries;
-    this->allEntries = source.allEntries;
-    this->debugEntries = source.debugEntries;
-    this->errorEntries = source.errorEntries;
-    this->fatalEntries = source.fatalEntries;
-    this->fineEntries = source.fineEntries;
-    this->finerEntries = source.finerEntries;
-    this->finestEntries = source.finestEntries;
-    this->infoEntries = source.infoEntries;
-    this->offEntries = source.offEntries;
-    this->severeEntries = source.severeEntries;
-    this->stackTraceLineEntries = source.stackTraceLineEntries;
-    this->traceEntries = source.traceEntries;
-    this->unknownEntries = source.unknownEntries;
-    this->warningEntries = source.warningEntries;
+    
+    this->messageEntries.insert(source.messageEntries.begin(), source.messageEntries.end());
+    this->allEntries.insert(source.allEntries.begin(), source.allEntries.end());
+    this->debugEntries.insert(source.debugEntries.begin(), source.debugEntries.end());
+    this->errorEntries.insert(source.errorEntries.begin(), source.errorEntries.end());
+    this->fatalEntries.insert(source.fatalEntries.begin(), source.fatalEntries.end());
+    this->fineEntries.insert(source.fineEntries.begin(), source.fineEntries.end());
+    this->finerEntries.insert(source.finerEntries.begin(), source.finerEntries.end());
+    this->finestEntries.insert(source.finestEntries.begin(), source.finestEntries.end());
+    this->infoEntries.insert(source.infoEntries.begin(), source.infoEntries.end());
+    this->offEntries.insert(source.offEntries.begin(), source.offEntries.end());
+    this->severeEntries.insert(source.severeEntries.begin(), source.severeEntries.end());
+    this->stackTraceEntries.insert(source.stackTraceEntries.begin(), source.stackTraceEntries.end());
+    this->stackTraceLineEntries.insert(source.stackTraceLineEntries.begin(), source.stackTraceLineEntries.end());
+    this->traceEntries.insert(source.traceEntries.begin(), source.traceEntries.end());
+    this->unknownEntries.insert(source.unknownEntries.begin(), source.unknownEntries.end());
+    this->warningEntries.insert(source.warningEntries.begin(), source.warningEntries.end());
 
     return *this;
 }
@@ -229,7 +229,9 @@ bool javaLogParser::operator ==(javaLogParser const &target) {
     // Compare pertinent values; 
     //      logLevel ; message
     //      date, time, and id can be disregarded for line comparisons; 
-    return true; 
+    bool equal = false;
+    (this->lineCount == target.lineCount) ? equal = true : equal = false;
+    return equal; 
 }
 
 void javaLogParser::addCounterMetrics (string logLevel) {
@@ -289,11 +291,6 @@ void javaLogParser::addCounterMetrics (string logLevel) {
             this->unknownEntries[ln]++;
             cout << "Failure to log Metrics for UNKNOWN Log Level Type: " << logLevel << ln << endl;
     }
-}
-
-void javaLogParser::addStackTraceMetrics (string line) {
-
-
 }
 
 void javaLogParser::addStackItem (string line) {
@@ -372,8 +369,8 @@ vector<string> javaLogParser::generateStats () {
     vector<string> stats; 
     int elements = this->lineCount;
     stats.push_back ("\tLines:\t\t\t\t" + to_string(elements) + "\n");
-    stats.push_back ("\tStack Trace Lines:\t\t" + to_string(stackTraceCount) + "\n"); 
     stats.push_back ("\tUniq Stack Trace Items:\t\t" + to_string(stackTraceLineEntries.size ()) + "\n");
+    stats.push_back ("\t\tStack Trace Lines:\t" + to_string(stackTraceCount) + "\n"); 
     stats.push_back ("\tUniq Log Entry Items:\t\t" + to_string(messageEntries.size ()) + "\n");
     // Suppress 0 value Entries to remove noisy output; 
     if(allCount != 0){ stats.push_back ("\t\tALL Entries:\t\t" + to_string(allCount) + "\n"); }
@@ -399,6 +396,11 @@ vector<string> javaLogParser::generateStats () {
     stats.push_back ("\tProcessed:\t\t" + to_string(lps/1000) + "K lines per second" + "\n");
 
     return stats;
+}
+
+javaLogEntry* javaLogParser::getCurrentLogEntry() {
+    size_t sz = this->logEntries.size() - 1;
+    return &this->logEntries[sz];
 }
 
 vector<javaLogEntry> javaLogParser::getElements() const {
@@ -526,6 +528,7 @@ void javaLogParser::processFile() {
         this->ss = istringstream(this->line);
         //cout << "firstWord:\t" << firstWord << endl; 
         this->ss >> firstWord; 
+        size_t sz = 0;
         
         if (!this->isStackTrace(firstWord)) {
             this->date = firstWord;
@@ -535,17 +538,22 @@ void javaLogParser::processFile() {
             getline(this->ss, this->message);  // Get remaining line entries as one object; 
             this->messageEntries[this->message]++;
             addCounterMetrics (this->logLevel);
+
             // Check if previous javaLogEntry contained a stack trace, if true ? push : continue;
-            vector<javaLogEntry>::iterator i_lastEntry = logEntries.end () -1;
-            if (i_lastEntry->containsStackTrace) {
-                if (javaLogParser::getDebug ()) { cout << "Adding Stack Trace to unordered map" << endl; }
-                this->stackTraceEntries[*i_lastEntry->jstPtr]++; // .insert (pair<javaStackTrace, int>(i_lastEntry->jstPtr, i_lastEntry));
+            sz = this->logEntries.size () - 1; // index to last element;
+            //if (javaLogParser::getDebug ()) { cout << "DEBUG: Stack Trace before unordered map: cst: " << this->logEntries[sz - 1].containsStackTrace << endl; }
+
+            if (sz > 0) {
+                if (this->logEntries[sz - 1].containsStackTrace == 1) {
+                    if (!logEntries[sz - 1].getLines ()->empty ()) {
+                        this->stackTraceEntries[*logEntries[sz - 1].jstPtr]++; 
+                    }
+                }
             }
         }
         else {
             //  Recursively add/pop line to previous javaLogEntry into stack trace vector; 
             this->processLine(line, true);
-            addStackTraceMetrics(line);
         }
     }
     if(javaLogParser::getDebug ()) { cout << "DEBUG: Processed File" << endl; }
@@ -561,18 +569,20 @@ javaLogEntry javaLogParser::processLine(string line, bool stackTrace) {
     else {
         this->lineCount++;
         this->stackTraceCount++;
-
         this->addStackItem(line); // add stack trace line to unique stack trace line items unordered_map; 
 
         int sz = this->logEntries.size ();
         if(sz == 0) {
             javaLogEntry logEntry (line);
+            logEntry.containsStackTrace = true;
             return logEntry;
         } else {
-            javaLogEntry logEntry (this->logEntries[sz -1]);  // -1 is important, causes core dump cuase itr is past last entry of vector; 
-            logEntry.push_back(line);
+            javaLogEntry* jle = &this->logEntries[sz -1];
+            jle->containsStackTrace = true; 
+            //javaLogEntry logEntry (this->logEntries[sz - 1]);  // -1 is important, causes core dump cuase itr is past last entry of vector; 
+            jle->push_back(line);
 
-            return logEntry;
+            return *jle;
         }
     }
 }
@@ -608,14 +618,16 @@ void javaLogParser::serializeData() {
      * usteLogFile: Uniq Stack Trace Entries
     */
     ofstream usteLogFile(this->base_dir + this->uste_log); 
-    if (javaLogParser::getDebug ()) { cout << "Uniq Stack Trace Log: " << this->base_dir + this->uste_log << endl; }
+    if (javaLogParser::getDebug ()) { cout << this->header ("DEBUG: Uniq Stack Trace Log: " + this->base_dir + this->uste_log) << "\t Stack Traces: " << this->stackTraceEntries.size() << endl; }
     multimap<int, javaStackTrace> stackTraceEntriesOrdered;
-    for (auto x : stackTraceEntries) {
+    for (auto x : this->stackTraceEntries) {
         stackTraceEntriesOrdered.insert(pair<int, javaStackTrace>(x.second, x.first));
     }
-    usteLogFile << this->header(" Unique Stack Trace Entries");
+    usteLogFile << this->header(" Unique Stack Trace Entries ");
+    if (javaLogParser::getDebug ()) { cout << "DEBUG: stackTraceEntries: " << this->stackTraceEntries.size() << "\nDEBUG: stackTraceEntriesOrdered: " << stackTraceEntriesOrdered.size() << endl;}
     for (auto x : stackTraceEntriesOrdered) {
         usteLogFile << x.first << " " << x.second << endl;
+        if (javaLogParser::getDebug ()) { cout << "DEBUG: stackTraceEntriesOrdered: " << x.first << x.second << endl;}
     }
 
     // Generate stats and iterate the stats vector; 

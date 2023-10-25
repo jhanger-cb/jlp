@@ -52,6 +52,14 @@ bool javaStackTrace::operator== (const javaStackTrace &jst) const {
     return true;
 }
 
+size_t javaStackTrace::hashit () const {
+    size_t hash = 0;
+    for (auto x : this->lineItems) {
+        hash += x.size();
+    }
+    return hash;
+}
+
 ostream& operator << (ostream &out, const javaStackTrace &jst) {
     for (size_t i=0; i<jst.liPtr[0].size(); i++) {
         //out << jst.liPtr[i];

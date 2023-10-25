@@ -89,6 +89,7 @@ public:
     static bool dump;
     static bool stats;
     static string filters;
+    javaLogEntry* currentLogEntry;
 
     // Member Function Declarations; 
     static bool getDebug ();
@@ -110,7 +111,6 @@ public:
     javaLogParser& operator +=(javaLogParser const &source);
     bool operator ==(javaLogParser const &target);
     void addCounterMetrics (string logLevel);
-    void addStackTraceMetrics (string line);
     void addStackItem (string line);
     void dumpElements ();
     vector<string> generateStats ();
@@ -125,4 +125,5 @@ public:
     javaLogEntry processLine(string line, bool stackTrace = false);
     void serializeData();
     string escaped(const string& input);
+    javaLogEntry* getCurrentLogEntry();
 };

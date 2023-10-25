@@ -13,6 +13,7 @@ javaLogEntry::javaLogEntry () {
 javaLogEntry::javaLogEntry (string ln) {
     this->line = ln;
     if(this->isStackTrace (ln)) {
+        this->lines.push_back(ln);
         this->stackTrace.push_back(ln);
         this->containsStackTrace = true;
     }
@@ -20,6 +21,7 @@ javaLogEntry::javaLogEntry (string ln) {
         // Process First Line data into variables;
         //      All other data will be stored in stackTrace; 
         this->lines.push_back(ln);
+        this->containsStackTrace = false;
     }
 }
 

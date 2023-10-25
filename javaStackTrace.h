@@ -49,6 +49,7 @@ public:
     void push_back(string lineItem);
     vector<string>* getStackTrace () const;
     bool operator== (const javaStackTrace &jst) const;
+    size_t hashit () const;
     friend ostream& operator<< (ostream &out, const javaStackTrace &jst);
 };
 
@@ -58,11 +59,6 @@ public:
 class javaStackHash {
 public: 
     size_t operator()(const javaStackTrace& jst) const {
-        size_t cumulative; 
-        for (auto x : *jst.liPtr) {
-            cumulative += x.size();
-        }
-        if(!cumulative) { cumulative = 0; }
-        return cumulative;
+        return jst.hashit ();
     }
 };
