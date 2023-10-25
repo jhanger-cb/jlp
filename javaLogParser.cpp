@@ -625,9 +625,11 @@ void javaLogParser::serializeData() {
     }
     usteLogFile << this->header(" Unique Stack Trace Entries ");
     if (javaLogParser::getDebug ()) { cout << "DEBUG: stackTraceEntries: " << this->stackTraceEntries.size() << "\nDEBUG: stackTraceEntriesOrdered: " << stackTraceEntriesOrdered.size() << endl;}
-    for (auto x : stackTraceEntriesOrdered) {
-        usteLogFile << x.first << " " << x.second << endl;
-        if (javaLogParser::getDebug ()) { cout << "DEBUG: stackTraceEntriesOrdered: " << x.first << x.second << endl;}
+    //for (auto x : stackTraceEntriesOrdered) {
+    multimap<int, javaStackTrace>::reverse_iterator rit;
+    for (rit = stackTraceEntriesOrdered.rbegin(); rit != stackTraceEntriesOrdered.rend(); rit++) {
+        usteLogFile << rit->first << " " << rit->second << endl;
+        if (javaLogParser::getDebug ()) { cout << "DEBUG: stackTraceEntriesOrdered: " << rit->first << rit->second << endl;}
     }
 
     // Generate stats and iterate the stats vector; 
