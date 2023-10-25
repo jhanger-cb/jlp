@@ -3,6 +3,7 @@
 #include <iterator>
 #include <sstream>
 #include <iostream>
+#include <sstream>
 #include <string>
 #include <cstring>
 #include <vector>
@@ -13,6 +14,7 @@
 #include <unordered_map> 
 #include <thread> 
 #include <set> 
+#include <algorithm>
 
 // Non-STL standard libraries:
 #include <sys/stat.h>
@@ -27,8 +29,12 @@
 #include <boost/algorithm/string/classification.hpp> // Include boost::for is_any_of
 #include <boost/algorithm/string/split.hpp> // Include for boost::split
 
-// Custom Inclusions: 
-#include "jlp.h"        // Class Defs;
+// Custom Inclusions (Are these needed to be included here or is in their respective class.h file appropriate? lets find out); 
+#include "config.h"
+#include "javaStackTrace.h"
+#include "javaLogEntry.h"
+#include "javaLogParser.h"        // Class Defs;
+
 
 // Namespacing: 
 using namespace boost;
@@ -42,6 +48,8 @@ bool javaLogParser::serialize;
 bool javaLogParser::dump; 
 bool javaLogParser::stats;
 string javaLogParser::filters;
+
+
 
 int main(int argc, char * argv[])
 {
@@ -67,7 +75,8 @@ int main(int argc, char * argv[])
     ("dump,d", "Print out the raw data.")
     ("serialize,s", "Save the aggregated data.")
     ("print-stats,-p", "Print Statistics Summary.")
-    ("debug,-b", "Print DEBUG log info");
+    ("debug,-b", "Print DEBUG log info")
+    ("version,-v", "Print Version info");
 
     positional_options_description p;
     p.add("input-file", -1);
@@ -130,6 +139,10 @@ int main(int argc, char * argv[])
         if (o.string_key == "debug") {
             javaLogParser::setDebug (true); 
         }
+        if (o.string_key == "version") {
+            cout << PROJECT_NAME << " " << PROJECT_VER << endl;
+            return 0;
+        }
     }
     
     if (argc <= 1 || fileNames.size() < 1) {
@@ -160,23 +173,12 @@ int main(int argc, char * argv[])
     for (auto x : fileNames) {
         for (auto y: x) {
             filename = y;
-            regex re(" ", regex_constants::match_any); 
-            filename = regex_replace(filename, re, "\\ ");
-            re = regex("/", regex_constants::match_any); 
-            filename = regex_replace(filename, re, "\\/");
-            re = regex("#", regex_constants::match_any); 
-            filename = regex_replace(filename, re, "\\#");
-            re = regex("$", regex_constants::match_any); 
-            filename = regex_replace(filename, re, "\\$");
-            re = regex("\\", regex_constants::match_any); 
-            filename = regex_replace(filename, re, "\\\\");
 
             if (javaLogParser::getDebug ()) { cout << "DEBUG:\n\tx: " << x.size () << "\n\tj: " << y.size() << "\n\tfilename: " << filename << "\n\tAggregation is: " << javaLogParser::getAggregate () << "\n\tDebug is " << javaLogParser::getDebug () << endl; }
             vlogParsers.push_back (javaLogParser(filename));
             if (javaLogParser::getDebug ()) { cout << "DEBUG: jlp created; pushing on stack;" << endl; }
             //vlogParsers.push_back (jlp);
             if (javaLogParser::getDebug ()) { cout << "DEBUG: jlp pushed" << endl; }
-
         }
     }
 
@@ -184,7 +186,7 @@ int main(int argc, char * argv[])
     // Override Aggregates Setting if more than one file presented to -i or positionally on cli; 
     if(fileNames.size() > 1) { 
         javaLogParser::setAggregate(true); 
-        if (javaLogParser::getDebug) { cout << "DEBUG: Overrode Aggregate Option: new value TRUE" << endl; }
+        if (javaLogParser::getDebug ()) { cout << "DEBUG: Overrode Aggregate Option: new value TRUE" << endl; }
         
     } else {
         javaLogParser::setAggregate(false); // No reason to have aggregation option set when there is only 1 file; 
@@ -207,7 +209,7 @@ int main(int argc, char * argv[])
         }
         else {
             if (javaLogParser::getDebug ()) { 
-                cout << "Aggregate not selected, iterating through options to print, serialize, dump, etc" << endl; 
+                cout << "DEBUG: Aggregate not selected, iterating through options to print, serialize, dump, etc" << endl; 
                 cout << "\t\tFilters: " << javaLogParser::getFilters () << endl;
                 cout << "\t\tDebug: " << javaLogParser::getDebug () << endl;
                 cout << "\t\tDump:  " << javaLogParser::getDump () << endl;
