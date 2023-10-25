@@ -38,14 +38,16 @@ void javaStackTrace::push_back (string lineItem) {
 }
 
 bool javaStackTrace::operator== (const javaStackTrace &jst) const {
+    bool ret = false;
     if (this->lineItems.size() != jst.liPtr->size ()) {
         return false;
     } else {
         //(this->lineItems == jst.lineItems) ? return true : return false; 
         int y = 0;
-        bool ret = false;
+        ret = false;
         for (auto x : this->lineItems) {
             (x == jst.lineItems[y]) ? ret = true : ret = false;
+            y++;
         }
         return ret;
     }

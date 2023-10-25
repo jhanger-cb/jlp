@@ -8,7 +8,7 @@
             "program": "/cbsupport/src/cpp/jlp/bin/jlp",
             "args": [
                 "-sp",
-                "test_data/jenkins.log"
+                "test_data/stack_trace_dups.log"
             ],
             "stopAtEntry": false,
             "cwd": "${fileDirname}",
