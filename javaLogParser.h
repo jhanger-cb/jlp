@@ -47,6 +47,7 @@ private:
     
     // Line Item Specific Variables;
     string line;
+    string firstWord;
     ifstream fh;
     istringstream ss;
 
@@ -90,6 +91,7 @@ public:
     static bool stats;
     static string filters;
     javaLogEntry* currentLogEntry;
+    static regex re;
 
     // Member Function Declarations; 
     static bool getDebug ();
@@ -118,7 +120,7 @@ public:
     logType hashit (string const& inString);
     string header (string title, int style = 2);
     void initFileNames ();
-    bool isStackTrace (string firstWord);
+    bool isStackTrace ();
     multimap<int, string> orderMap (unordered_map<string, int>& sourceMap);
     void printStats ();
     void processFile();

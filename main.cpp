@@ -48,6 +48,7 @@ bool javaLogParser::serialize;
 bool javaLogParser::dump; 
 bool javaLogParser::stats;
 string javaLogParser::filters;
+regex javaLogParser::re = regex("^[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]");
 
 
 

@@ -295,12 +295,12 @@ void javaLogParser::addCounterMetrics (string logLevel) {
 
 void javaLogParser::addStackItem (string line) {
     istringstream ss(line);
-    string firstWord, traceItem; 
-    ss >> firstWord;
-    if (firstWord != "at" || firstWord != "Caused:"){
+    string traceItem; 
+    ss >> this->firstWord;
+    if (this->firstWord != "at" || this->firstWord != "Caused:"){
         string tmp; 
         getline(ss,tmp);
-        traceItem = firstWord + tmp;
+        traceItem = this->firstWord + tmp;
     } else {
         getline(ss,traceItem);
     }
@@ -493,9 +493,8 @@ void javaLogParser::initFileNames () {
     if(dbgPrev) { this->setDebug (dbgPrev); }
 }
 
-bool javaLogParser::isStackTrace (string firstWord) {
-    regex re("^[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]");
-    return !regex_match (firstWord, re);
+bool javaLogParser::isStackTrace () {
+    return !regex_match (this->firstWord, javaLogParser::re);
 }
 
 multimap<int, string> javaLogParser::orderMap (unordered_map<string, int>& sourceMap) {
@@ -524,14 +523,13 @@ void javaLogParser::processFile() {
     }
 
     while (getline(this->fh, this->line)) {
-        string firstWord;
         this->ss = istringstream(this->line);
         //cout << "firstWord:\t" << firstWord << endl; 
-        this->ss >> firstWord; 
+        this->ss >> this->firstWord; 
         size_t sz = 0;
         
-        if (!this->isStackTrace(firstWord)) {
-            this->date = firstWord;
+        if (!this->isStackTrace()) {
+            this->date = this->firstWord;
             javaLogEntry logEntry = this->processLine(line);
             this->logEntries.push_back(logEntry); 
             this->ss >> this->timestamp >> this->id >> this->logLevel; 
