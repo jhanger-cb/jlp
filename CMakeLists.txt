@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.27.7)
 project(jlp 
-  VERSION 0.3.0 
+  VERSION 0.3.1
   DESCRIPTION "Java Log Parser")
 if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release)
