@@ -23,7 +23,7 @@
 #include <boost/program_options.hpp>
 #include <boost/tokenizer.hpp>
 #include <boost/token_functions.hpp>
-#include <bits/stdc++.h>
+//#include <bits/stdc++.h>                            // Non-Standard header, breaking mac; 
 #include <boost/algorithm/string.hpp>
 #include <boost/algorithm/string/find_iterator.hpp>
 #include <boost/algorithm/string/classification.hpp> // Include boost::for is_any_of
@@ -49,6 +49,8 @@ bool javaLogParser::dump;
 bool javaLogParser::stats;
 string javaLogParser::filters;
 regex javaLogParser::re = regex("^[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]");
+regex javaLogParser::reDate = regex("^[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]");
+regex javaLogParser::reException = regex("Exception");
 
 
 
@@ -141,7 +143,9 @@ int main(int argc, char * argv[])
             javaLogParser::setDebug (true); 
         }
         if (o.string_key == "version") {
-            cout << PROJECT_NAME << " " << PROJECT_VER << endl;
+            if(PROJECT_VER_RELEASE){
+                cout << PROJECT_NAME << " " << PROJECT_VER << PROJECT_VER_RELEASE << endl;
+            }
             return 0;
         }
     }

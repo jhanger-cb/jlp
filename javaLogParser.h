@@ -17,7 +17,7 @@ private:
     // Global Level Variables not specific to any particular method: 
     string fileName;
 
-    enum logType { ALL = 1 << 1, CONFIG = 1 << 2, DEBUG = 1 << 3, ERROR = 1 << 4, FATAL = 1 << 5, FINE = 1 << 6, FINER = 1 << 7, FINEST = 1 << 8, INFO = 1 << 9, OFF = 1 << 10, SEVERE = 1 << 11, TRACE = 1 << 12, UNKNOWN = 1 << 13, WARN = 1 << 14 }; 
+    enum logLevelType { ALL = 1 << 1, CONFIG = 1 << 2, DEBUG = 1 << 3, ERROR = 1 << 4, FATAL = 1 << 5, FINE = 1 << 6, FINER = 1 << 7, FINEST = 1 << 8, INFO = 1 << 9, OFF = 1 << 10, SEVERE = 1 << 11, TRACE = 1 << 12, UNKNOWN = 1 << 13, WARN = 1 << 14 }; 
 
     // Metrics: 
     // Count each type of logType encountered; 
@@ -25,6 +25,7 @@ private:
 	int allCount		= 0;
 	int debugCount		= 0;
 	int errorCount		= 0;
+	int exceptionCount	= 0;
 	int fatalCount		= 0;
 	int fineCount		= 0;
 	int finerCount		= 0;
@@ -41,8 +42,7 @@ private:
     time_t pStart = time(nullptr);
     time_t pEnd = time(nullptr); 
 
-    unordered_map<string, int> messageEntries, allEntries, debugEntries, errorEntries, fatalEntries, fineEntries, finerEntries, finestEntries, infoEntries, offEntries, severeEntries,  stackTraceLineEntries, traceEntries, unknownEntries, warningEntries; 
-
+    unordered_map<string, int> messageEntries, allEntries, debugEntries, errorEntries, exceptionEntries, fatalEntries, fineEntries, finerEntries, finestEntries, infoEntries, offEntries, severeEntries,  stackTraceLineEntries, traceEntries, unknownEntries, warningEntries; 
     unordered_map<javaStackTrace, int, javaStackHash> stackTraceEntries;
     
     // Line Item Specific Variables;
@@ -52,7 +52,6 @@ private:
     istringstream ss;
 
     vector<javaLogEntry> logEntries = {};
-    vector<string>::const_iterator iter; // Unused thusfar, may remove as a global iterator seems pointless ? "dweeb" : "that's one hypothesis"
 
     // Log File Fields
     string date; 
@@ -69,6 +68,7 @@ private:
     string all_log = "";
     string debug_log = "";
     string error_log = "";
+    string exception_log = "";
     string fatal_log = "";
     string fine_log = "";
     string finer_log = "";
@@ -92,6 +92,8 @@ public:
     static string filters;
     javaLogEntry* currentLogEntry;
     static regex re;
+    static regex reDate;
+    static regex reException;
 
     // Member Function Declarations; 
     static bool getDebug ();
@@ -117,14 +119,15 @@ public:
     void dumpElements ();
     vector<string> generateStats ();
     vector<javaLogEntry> getElements() const;
-    logType hashit (string const& inString);
+    logLevelType hashit (string const& inString);
     string header (string title, int style = 2);
     void initFileNames ();
     bool isStackTrace ();
+    bool hasException ();
     multimap<int, string> orderMap (unordered_map<string, int>& sourceMap);
     void printStats ();
     void processFile();
-    javaLogEntry processLine(string line, bool stackTrace = false);
+    javaLogEntry processLine();
     void serializeData();
     string escaped(const string& input);
     javaLogEntry* getCurrentLogEntry();

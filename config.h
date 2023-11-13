@@ -2,9 +2,10 @@
 #define INCLUDE_GUARD
 
 #define PROJECT_NAME "jlp"
-#define PROJECT_VER  "0.3.1"
-#define PROJECT_VER_MAJOR "0"
-#define PROJECT_VER_MINOR "3"
-#define PTOJECT_VER_PATCH "1"
+#define PROJECT_VER  "0.3.2"
+#define PROJECT_VER_RELEASE ""
+#define PROJECT_VER_MAJOR   "0"
+#define PROJECT_VER_MINOR   "3"
+#define PROJECT_VER_PATCH   "2"
 
 #endif // INCLUDE_GUARD

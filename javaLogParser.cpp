@@ -116,6 +116,7 @@ javaLogParser::javaLogParser (const javaLogParser& source) {
     this->allCount				= source.allCount;
     this->debugCount			= source.debugCount;
     this->errorCount			= source.errorCount;
+    this->exceptionCount		= source.exceptionCount;
     this->fatalCount			= source.fatalCount;
     this->fineCount				= source.fineCount;
     this->finerCount			= source.finerCount;
@@ -132,6 +133,7 @@ javaLogParser::javaLogParser (const javaLogParser& source) {
     this->allEntries			= source.allEntries;
     this->debugEntries			= source.debugEntries;
     this->errorEntries			= source.errorEntries;
+    this->exceptionEntries		= source.exceptionEntries;
     this->fatalEntries			= source.fatalEntries;
     this->fineEntries			= source.fineEntries;
     this->finerEntries			= source.finerEntries;
@@ -148,22 +150,23 @@ javaLogParser::javaLogParser (const javaLogParser& source) {
 }
 
 javaLogParser::javaLogParser () {
-    this->pStart = time(nullptr);       // Metrics for Efficiency; 
-    this->lineCount = 0;
-    this->allCount = 0;
-    this->debugCount = 0;
-    this->errorCount = 0;
-    this->fatalCount = 0;
-    this->fineCount = 0;
-    this->finerCount = 0;
-    this->finestCount = 0;
-    this->infoCount = 0;
-    this->offCount = 0;
-    this->severeCount = 0;
-    this->stackTraceCount = 0;
-    this->traceCount = 0;
-    this->unknownCount = 0;
-    this->warningCount = 0; 
+    this->pStart            = time(nullptr);       // Metrics for Efficiency; 
+    this->lineCount         = 0;
+    this->allCount          = 0;
+    this->debugCount        = 0;
+    this->errorCount        = 0;
+    this->exceptionCount    = 0;
+    this->fatalCount        = 0;
+    this->fineCount         = 0;
+    this->finerCount        = 0;
+    this->finestCount       = 0;
+    this->infoCount         = 0;
+    this->offCount          = 0;
+    this->severeCount       = 0;
+    this->stackTraceCount   = 0;
+    this->traceCount        = 0;
+    this->unknownCount      = 0;
+    this->warningCount      = 0; 
     this->initFileNames ();
 
 }
@@ -174,21 +177,22 @@ javaLogParser::~javaLogParser () {
 
 javaLogParser& javaLogParser::operator +=(javaLogParser const &source) {
     // Set filename to `aggregate + _{stat,ule,ulste} + .log`;
-    this->lineCount += source.lineCount;
-    this->allCount += source.allCount;
-    debugCount += source.debugCount;
-    this->errorCount += source.errorCount;
-    this->fatalCount += source.fatalCount;
-    this->fineCount += source.fineCount;
-    this->finerCount += source.finerCount;
-    this->finestCount += source.finestCount;
-    this->infoCount += source.infoCount;
-    this->offCount += source.offCount;
-    this->severeCount += source.severeCount;
-    this->stackTraceCount += source.stackTraceCount;
-    this->traceCount += source.traceCount;
-    this->unknownCount += source.unknownCount;
-    this->warningCount += source.warningCount; 
+    this->lineCount         += source.lineCount;
+    this->allCount          += source.allCount;
+    debugCount              += source.debugCount;
+    this->errorCount        += source.errorCount;
+    this->exceptionCount    += source.exceptionCount;
+    this->fatalCount        += source.fatalCount;
+    this->fineCount         += source.fineCount;
+    this->finerCount        += source.finerCount;
+    this->finestCount       += source.finestCount;
+    this->infoCount         += source.infoCount;
+    this->offCount          += source.offCount;
+    this->severeCount       += source.severeCount;
+    this->stackTraceCount   += source.stackTraceCount;
+    this->traceCount        += source.traceCount;
+    this->unknownCount      += source.unknownCount;
+    this->warningCount      += source.warningCount; 
     if(this->pStart > source.pStart) { this->pStart = source.pStart; }
     if(this->pEnd < source.pEnd) { this->pEnd = source.pEnd; } 
 
@@ -209,6 +213,7 @@ javaLogParser& javaLogParser::operator +=(javaLogParser const &source) {
     this->allEntries.insert(source.allEntries.begin(), source.allEntries.end());
     this->debugEntries.insert(source.debugEntries.begin(), source.debugEntries.end());
     this->errorEntries.insert(source.errorEntries.begin(), source.errorEntries.end());
+    this->exceptionEntries.insert(source.exceptionEntries.begin(), source.exceptionEntries.end());
     this->fatalEntries.insert(source.fatalEntries.begin(), source.fatalEntries.end());
     this->fineEntries.insert(source.fineEntries.begin(), source.fineEntries.end());
     this->finerEntries.insert(source.finerEntries.begin(), source.finerEntries.end());
@@ -376,6 +381,7 @@ vector<string> javaLogParser::generateStats () {
     if(allCount != 0){ stats.push_back ("\t\tALL Entries:\t\t" + to_string(allCount) + "\n"); }
     if(debugCount != 0){ stats.push_back ("\t\tDEBUG Entries:\t\t" + to_string(debugCount) + "\n"); }
     if(errorCount != 0){ stats.push_back ("\t\tERROR Entries:\t\t" + to_string(errorCount) + "\n"); }
+    if(exceptionCount != 0){ stats.push_back ("\t\tException Entries:\t\t" + to_string(exceptionCount) + "\n"); }
     if(fatalCount != 0){ stats.push_back ("\t\tFATAL Entries:\t\t" + to_string(fatalCount) + "\n"); }
     if(fineCount != 0){ stats.push_back ("\t\tFINE Entries:\t\t" + to_string(fineCount) + "\n"); }
     if(finerCount != 0){ stats.push_back ("\t\tFINER Entries:\t\t" + to_string(finerCount) + "\n"); }
@@ -408,7 +414,7 @@ vector<javaLogEntry> javaLogParser::getElements() const {
 }; 
 
 
-javaLogParser::logType javaLogParser::hashit (string const& inString) {
+javaLogParser::logLevelType javaLogParser::hashit (string const& inString) {
     if (inString == "ALL") return ALL;
     else if (inString == "DEBUG") return DEBUG; 
     else if (inString == "ERROR" || inString == "ERR") return ERROR; 
@@ -466,6 +472,8 @@ void javaLogParser::initFileNames () {
     debug_log     = prefix + "_debug.log";
     if(javaLogParser::getDebug ()) { cout << "DEBUG: Initialized Log File Names: debug_log" << endl; }
     this->error_log     = prefix + "_error.log";
+    if(javaLogParser::getDebug ()) { cout << "DEBUG: Initialized Log File Names: debug_log" << endl; }
+    this->exception_log = prefix + "_exception.log";
     if(javaLogParser::getDebug ()) { cout << "DEBUG: Initialized Log File Names: err_log" << endl; }
     this->fatal_log     = prefix + "_fatal.log";
     if(javaLogParser::getDebug ()) { cout << "DEBUG: Initialized Log File Names: fatal_log" << endl; }
@@ -494,7 +502,11 @@ void javaLogParser::initFileNames () {
 }
 
 bool javaLogParser::isStackTrace () {
-    return !regex_match (this->firstWord, javaLogParser::re);
+    return !regex_match (this->firstWord, javaLogParser::reDate);
+}
+
+bool javaLogParser::hasException () {
+    return regex_search (this->line, javaLogParser::reException); 
 }
 
 multimap<int, string> javaLogParser::orderMap (unordered_map<string, int>& sourceMap) {
@@ -530,12 +542,17 @@ void javaLogParser::processFile() {
         
         if (!this->isStackTrace()) {
             this->date = this->firstWord;
-            javaLogEntry logEntry = this->processLine(line);
+            javaLogEntry logEntry = this->processLine();
             this->logEntries.push_back(logEntry); 
             this->ss >> this->timestamp >> this->id >> this->logLevel; 
             getline(this->ss, this->message);  // Get remaining line entries as one object; 
             this->messageEntries[this->message]++;
             addCounterMetrics (this->logLevel);
+            // Add Exception Entries 
+            if (this->hasException()) {
+               this->exceptionCount++;
+               this->exceptionEntries[this->line]++; 
+            }
 
             // Check if previous javaLogEntry contained a stack trace, if true ? push : continue;
             sz = this->logEntries.size () - 1; // index to last element;
@@ -551,16 +568,20 @@ void javaLogParser::processFile() {
         }
         else {
             //  Recursively add/pop line to previous javaLogEntry into stack trace vector; 
-            this->processLine(line, true);
+            if (this->hasException()) {
+                this->exceptionCount++;
+                this->exceptionEntries[this->line]++; 
+            }
+            this->processLine();
         }
     }
     if(javaLogParser::getDebug ()) { cout << "DEBUG: Processed File" << endl; }
 }
 
-javaLogEntry javaLogParser::processLine(string line, bool stackTrace) {
-    if(!stackTrace) {
+javaLogEntry javaLogParser::processLine() {
+    if(!this->isStackTrace ()) {
         //cout << "Initial Log Entry - Not a Stack Trace:" << line << endl;
-        javaLogEntry logEntry (line);
+        javaLogEntry logEntry (this->line);
         this->lineCount++;
         return logEntry;
     } 
@@ -682,6 +703,18 @@ void javaLogParser::serializeData() {
             errorLogFile << it->first << " " << it->second << endl;
         }
         errorLogFile.close ();
+    }
+    if (this->exceptionCount > 0) {
+        ofstream exceptionLogFile(this->base_dir + this->exception_log); 
+        multimap<int, string> exceptionEntriesOrdered;
+        for (auto x : exceptionEntries) {
+            exceptionEntriesOrdered.insert(pair<int, string>(x.second, x.first));
+        }
+        exceptionLogFile << this->header(" Unique exception Log Level Entries ");
+        for (it = exceptionEntriesOrdered.rbegin(); it != exceptionEntriesOrdered.rend(); it++) {
+            exceptionLogFile << it->first << " " << it->second << endl;
+        }
+        exceptionLogFile.close ();
     }
     if (this->fatalCount > 0) {
         ofstream fatalLogFile(this->base_dir + this->fatal_log); 
