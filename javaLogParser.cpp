@@ -105,7 +105,7 @@ javaLogParser::javaLogParser (string fileName) {
     }
     
     this->initFileNames ();
-    this->processFile();
+    m_thread = thread(&javaLogParser::processFile, this);
 }
 
 javaLogParser::javaLogParser (const javaLogParser& source) {
@@ -172,6 +172,9 @@ javaLogParser::javaLogParser () {
 }
 
 javaLogParser::~javaLogParser () {
+    if(m_thread.joinable()){
+        m_thread.join();
+    }
     this->fh.close ();
 }
 
@@ -413,7 +416,6 @@ vector<javaLogEntry> javaLogParser::getElements() const {
     return this->logEntries; 
 }; 
 
-
 javaLogParser::logLevelType javaLogParser::hashit (string const& inString) {
     if (inString == "ALL") return ALL;
     else if (inString == "DEBUG") return DEBUG; 
@@ -509,6 +511,14 @@ bool javaLogParser::hasException () {
     return regex_search (this->line, javaLogParser::reException); 
 }
 
+bool javaLogParser::joinable () {
+    return this->m_thread.joinable ();
+}
+
+void javaLogParser::join () {
+    this->m_thread.join ();
+}
+
 multimap<int, string> javaLogParser::orderMap (unordered_map<string, int>& sourceMap) {
     multimap<int, string> orderedMap;
     for (auto x : sourceMap) {
@@ -530,7 +540,7 @@ void javaLogParser::printStats () {
 void javaLogParser::processFile() {
     this->fh = ifstream(this->fileName); // streams don't use exceptions by default; 
     if (!this->fh) {
-        string header = string("Error in File: " + this->fileName); 
+        string header = string("Error in File: " + this->fileName + strerror(errno)); 
         cout << "DEBUG: " << this->header(header) << endl; 
     }
 

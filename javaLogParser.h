@@ -16,6 +16,7 @@ class javaLogParser {
 private:
     // Global Level Variables not specific to any particular method: 
     string fileName;
+    thread m_thread;
 
     enum logLevelType { ALL = 1 << 1, CONFIG = 1 << 2, DEBUG = 1 << 3, ERROR = 1 << 4, FATAL = 1 << 5, FINE = 1 << 6, FINER = 1 << 7, FINEST = 1 << 8, INFO = 1 << 9, OFF = 1 << 10, SEVERE = 1 << 11, TRACE = 1 << 12, UNKNOWN = 1 << 13, WARN = 1 << 14 }; 
 
@@ -124,6 +125,8 @@ public:
     void initFileNames ();
     bool isStackTrace ();
     bool hasException ();
+    bool joinable (); 
+    void join ();
     multimap<int, string> orderMap (unordered_map<string, int>& sourceMap);
     void printStats ();
     void processFile();

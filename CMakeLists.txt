@@ -47,6 +47,7 @@ endif()
 add_compile_options(
   -Wall
   -Wextra
+  -pthread
   $<$<CONFIG:DEBUG>:-g>
   $<$<CONFIG:DEBUG>:-pg>
   $<$<CONFIG:RELEASE>:-O3>

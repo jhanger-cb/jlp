@@ -5,10 +5,10 @@
             "name": "(gdb) Launch",
             "type": "cppdbg",
             "request": "launch",
-            "program": "/cbsupport/src/cpp/jlp/bin/jlp",
+            "program": "/cbsupport/src/cpp/jlp/Debug/jlp",
             "args": [
-                "-sp",
-                "test_data/jenkins.log"
+                "-bsp",
+                "/cbsupport/src/cpp/jlp/test_data/jenkins.log"
             ],
             "stopAtEntry": false,
             "cwd": "${fileDirname}",

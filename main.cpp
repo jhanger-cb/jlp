@@ -1,20 +1,19 @@
 // STL Inclusions: 
+#include <algorithm>
+#include <chrono>
+#include <cstring>
+#include <ctime>
+#include <exception>
 #include <fstream>
 #include <iterator>
-#include <sstream>
 #include <iostream>
+#include <regex>
+#include <set> 
 #include <sstream>
 #include <string>
-#include <cstring>
-#include <vector>
-#include <regex>
-#include <ctime>
-#include <chrono>
-#include <exception>
-#include <unordered_map> 
 #include <thread> 
-#include <set> 
-#include <algorithm>
+#include <unordered_map> 
+#include <vector>
 
 // Non-STL standard libraries:
 #include <sys/stat.h>
@@ -23,7 +22,7 @@
 #include <boost/program_options.hpp>
 #include <boost/tokenizer.hpp>
 #include <boost/token_functions.hpp>
-//#include <bits/stdc++.h>                            // Non-Standard header, breaking mac; 
+//#include <bits/stdc++.h>                            // Non-Standard header, breaking mac; compiles fine without so will remove; *DEPRECATED*
 #include <boost/algorithm/string.hpp>
 #include <boost/algorithm/string/find_iterator.hpp>
 #include <boost/algorithm/string/classification.hpp> // Include boost::for is_any_of
@@ -88,7 +87,7 @@ int main(int argc, char * argv[])
     // Skip storing the options in a map;  
     //  parsed_options parsed_options = command_line_parser(argc, argv).options(desc).run();
     parsed_options parsed_options = command_line_parser(argc,argv).options(desc).positional(p).run();
-    vector <vector <string>> fileNames;
+    vector<vector <string>> fileNames;
 
     variables_map vm;
     store(parsed_options, vm);
@@ -172,18 +171,21 @@ int main(int argc, char * argv[])
     //      Solution: do both; Aggregate summary <javaLogParser1> + <javaLogParser2> => stats sums both;
     //          - serialize aggregates both to a summary file; 
     vector<javaLogParser> vlogParsers;
-    if (javaLogParser::getDebug ()) { cout << "DEBUG: init log parsers vector" << endl; }
-
+    if (javaLogParser::getDebug ()) { cout << "DEBUG: init log parsers vector & threads; Filename count: " << fileNames.size() << endl; }
     // Iterate through Filenames; 
     for (auto x : fileNames) {
         for (auto y: x) {
             filename = y;
-
             if (javaLogParser::getDebug ()) { cout << "DEBUG:\n\tx: " << x.size () << "\n\tj: " << y.size() << "\n\tfilename: " << filename << "\n\tAggregation is: " << javaLogParser::getAggregate () << "\n\tDebug is " << javaLogParser::getDebug () << endl; }
-            vlogParsers.push_back (javaLogParser(filename));
             if (javaLogParser::getDebug ()) { cout << "DEBUG: jlp created; pushing on stack;" << endl; }
-            //vlogParsers.push_back (jlp);
+            vlogParsers.push_back(javaLogParser(filename));
             if (javaLogParser::getDebug ()) { cout << "DEBUG: jlp pushed" << endl; }
+        }
+    }
+
+    for (auto x : vlogParsers) {
+        if(x.joinable()){
+            x.join (); 
         }
     }
 
@@ -198,7 +200,6 @@ int main(int argc, char * argv[])
     }
     //javaLogParser aggregateParser(/*vlogParsers[0]*/); // segfaults when no parameters passed, means failing to print help/usage and exit when no parameters passed !; 
     javaLogParser aggregateParser;
-    // segfaults when no parameters passed, means failing to print help/usage and exit when no parameters passed !; 
     if (javaLogParser::getDebug ()) { cout << "DEBUG: Entering loop: \n\tvlogParsers.size(): \t" << vlogParsers.size() << endl; }
     int y=0;
     int sz = vlogParsers.size ();
@@ -207,7 +208,7 @@ int main(int argc, char * argv[])
         if (javaLogParser::getAggregate ()) {    
             if (javaLogParser::getDebug ()) { cout << "DEBUG: Aggregate selected, adding objects: vlog: " << vlogParsers.size () << endl; }
             if (sz == 1) { 
-                javaLogParser aggregateParser(x); 
+                    javaLogParser aggregateParser(x);
             } else { 
                 aggregateParser += x; 
             }
