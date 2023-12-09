@@ -8,7 +8,7 @@
             "program": "/cbsupport/src/cpp/jlp/Debug/jlp",
             "args": [
                 "-bsp",
-                "/cbsupport/src/cpp/jlp/test_data/jenkins.log"
+                "/cbsupport/src/cpp/jlp/test_data/jenkins.log{,.bak1}"
             ],
             "stopAtEntry": false,
             "cwd": "${fileDirname}",

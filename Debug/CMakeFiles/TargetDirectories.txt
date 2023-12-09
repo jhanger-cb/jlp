@@ -1,0 +1,3 @@
+/cbsupport/src/cpp/jlp/Debug/CMakeFiles/jlp.dir
+/cbsupport/src/cpp/jlp/Debug/CMakeFiles/edit_cache.dir
+/cbsupport/src/cpp/jlp/Debug/CMakeFiles/rebuild_cache.dir

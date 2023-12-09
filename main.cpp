@@ -1,5 +1,6 @@
 // STL Inclusions: 
 #include <algorithm>
+#include <atomic>
 #include <chrono>
 #include <cstring>
 #include <ctime>
@@ -28,7 +29,7 @@
 #include <boost/algorithm/string/classification.hpp> // Include boost::for is_any_of
 #include <boost/algorithm/string/split.hpp> // Include for boost::split
 
-// Custom Inclusions (Are these needed to be included here or is in their respective class.h file appropriate? lets find out); 
+// Custom Inclusions 
 #include "config.h"
 #include "javaStackTrace.h"
 #include "javaLogEntry.h"
@@ -183,9 +184,9 @@ int main(int argc, char * argv[])
         }
     }
 
-    for (auto x : vlogParsers) {
-        if(x.joinable()){
-            x.join (); 
+    for (auto y : vlogParsers) {
+        if(y.joinable()) {
+            y.join (); 
         }
     }
 

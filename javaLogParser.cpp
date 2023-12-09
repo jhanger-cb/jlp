@@ -512,7 +512,7 @@ bool javaLogParser::hasException () {
 }
 
 bool javaLogParser::joinable () {
-    return this->m_thread.joinable ();
+    return this->m_thread.joinable();
 }
 
 void javaLogParser::join () {
