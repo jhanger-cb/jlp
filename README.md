@@ -3,6 +3,8 @@
 # Releases: 
   * v0.1    - First Stable Release - 10/19/2023
   * v0.2.0  - Refactored Code Base - Stack Trace Aggregation - 10/20/2023
+  * v0.3.0 - Regex compilation order changed to improve performance - previous capped at 250 lines per second, now pushing over 15k lines per second parsed - 10/30/2023
+
 
 ## Java Log Parser (jlp)
 
