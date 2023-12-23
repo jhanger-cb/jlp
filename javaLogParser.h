@@ -16,9 +16,8 @@ class javaLogParser {
 private:
     // Global Level Variables not specific to any particular method: 
     string fileName;
-    thread m_thread;
 
-    enum logLevelType { ALL = 1 << 1, CONFIG = 1 << 2, DEBUG = 1 << 3, ERROR = 1 << 4, FATAL = 1 << 5, FINE = 1 << 6, FINER = 1 << 7, FINEST = 1 << 8, INFO = 1 << 9, OFF = 1 << 10, SEVERE = 1 << 11, TRACE = 1 << 12, UNKNOWN = 1 << 13, WARN = 1 << 14 }; 
+    enum logLevelType { ALL = 1 << 1, CONFIG = 1 << 2, DBG = 1 << 3, ERROR = 1 << 4, FATAL = 1 << 5, FINE = 1 << 6, FINER = 1 << 7, FINEST = 1 << 8, INFO = 1 << 9, OFF = 1 << 10, SEVERE = 1 << 11, TRACE = 1 << 12, UNKNOWN = 1 << 13, WARN = 1 << 14 }; 
 
     // Metrics: 
     // Count each type of logType encountered; 
@@ -52,7 +51,7 @@ private:
     ifstream fh;
     istringstream ss;
 
-    vector<javaLogEntry> logEntries = {};
+    vector<javaLogEntry*> logEntries = {};
 
     // Log File Fields
     string date; 
@@ -97,6 +96,15 @@ public:
     static regex reException;
 
     // Member Function Declarations; 
+    // Overloads/Constructors/Destructor
+    javaLogParser (string fileName);
+    javaLogParser (const javaLogParser& source);
+    javaLogParser ();
+    ~javaLogParser ();
+    javaLogParser& operator +=(javaLogParser const &source);
+    bool operator ==(javaLogParser const &target);
+
+    // Static Functions: 
     static bool getDebug ();
     static bool setDebug (bool dbg);
     static bool getDump();
@@ -109,20 +117,16 @@ public:
     static bool setStats (bool ser);
     static string getFilters ();
     static string setFilters (string fltrs);
-    javaLogParser (string fileName);
-    javaLogParser (const javaLogParser& source);
-    javaLogParser ();
-    ~javaLogParser ();
-    javaLogParser& operator +=(javaLogParser const &source);
-    bool operator ==(javaLogParser const &target);
+
+    // The rest of the functions ;P 
     void addCounterMetrics (string logLevel);
     void addStackItem (string line);
     void dumpElements ();
     vector<string> generateStats ();
-    vector<javaLogEntry> getElements() const;
     logLevelType hashit (string const& inString);
     string header (string title, int style = 2);
     void initFileNames ();
+    void initParser (string fn);
     bool isStackTrace ();
     bool hasException ();
     bool joinable (); 
@@ -130,7 +134,7 @@ public:
     multimap<int, string> orderMap (unordered_map<string, int>& sourceMap);
     void printStats ();
     void processFile();
-    javaLogEntry processLine();
+    javaLogEntry* processLine();
     void serializeData();
     string escaped(const string& input);
     javaLogEntry* getCurrentLogEntry();

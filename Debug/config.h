@@ -6,6 +6,6 @@
 #define PROJECT_VER_MAJOR   "0"
 #define PROJECT_VER_MINOR   "3"
 #define PROJECT_VER_PATCH   "2"
-#define PROJECT_VER_RELEASE "-stable"
+#define PROJECT_VER_RELEASE "-debug"
 
 #endif // INCLUDE_GUARD

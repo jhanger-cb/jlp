@@ -38,6 +38,11 @@ using namespace boost;
 using namespace boost::program_options;
 using namespace std;
 
+void threadStartup(int threadid)
+{
+  std::cout << "Thread ID: " << threadid << std::endl;
+}
+
 bool javaLogParser::getDebug () {
     return javaLogParser::debug;
 }
@@ -92,9 +97,22 @@ string javaLogParser::setFilters (string fltrs) {
     return javaLogParser::filters;
 }
 
-javaLogParser::javaLogParser (string fileName) {
+void javaLogParser::initParser(string fn){
+    this->fileName = fn;
+    this->initFileNames ();
+    this->processFile ();
+}
+
+javaLogParser::javaLogParser (string fileName)/*: m_thread(&javaLogParser::initParser, this)*/{
     this->pStart = time(nullptr);       // Metrics for Efficiency; 
-    lineCount=allCount=debugCount=errorCount=fatalCount=fineCount=finerCount=finestCount=infoCount=offCount=severeCount=stackTraceCount=traceCount=unknownCount=warningCount=0;
+    //thread l_thread(&javaLogParser::initParser, this);
+    cerr << "DEBUG: Thread Started;" << endl; // Will remove later or encapsulate in DBG flagged params;
+    // Lock: 
+    //this->threadLock.load(memory_order_acquire);
+    
+    // The next line is already covered in the class initialization; 
+    // Testing commenting out; 
+    //lineCount=allCount=debugCount=errorCount=fatalCount=fineCount=finerCount=finestCount=infoCount=offCount=severeCount=stackTraceCount=traceCount=unknownCount=warningCount=0;
     if(javaLogParser::getDebug ()) { cout << "DEBUG: debug: " << javaLogParser::debug << "  param debug: " << debug << endl; }
     if(javaLogParser::getDebug ()) { cout << "DEBUG: javaLogParser initialized (filename, filters, aggregate, debug)" << "( " << fileName << ", " << filters << ", " << aggregate << "," << debug << ")" << endl; }
     this->fileName = fileName; 
@@ -105,13 +123,13 @@ javaLogParser::javaLogParser (string fileName) {
     }
     
     this->initFileNames ();
-    m_thread = thread(&javaLogParser::processFile, this);
+    this->processFile ();
 }
 
-javaLogParser::javaLogParser (const javaLogParser& source) {
+javaLogParser::javaLogParser (const javaLogParser& source)/*: m_thread(&javaLogParser::initParser, this)*/{
     if(this->pStart > source.pStart) { this->pStart = source.pStart; }
     if(this->pEnd < source.pEnd) { this->pEnd = source.pEnd; } 
-    this->fileName				=  source.fileName; 
+    this->fileName				= source.fileName; 
     this->lineCount				= source.lineCount;
     this->allCount				= source.allCount;
     this->debugCount			= source.debugCount;
@@ -149,40 +167,24 @@ javaLogParser::javaLogParser (const javaLogParser& source) {
     this->initFileNames ();
 }
 
-javaLogParser::javaLogParser () {
-    this->pStart            = time(nullptr);       // Metrics for Efficiency; 
-    this->lineCount         = 0;
-    this->allCount          = 0;
-    this->debugCount        = 0;
-    this->errorCount        = 0;
-    this->exceptionCount    = 0;
-    this->fatalCount        = 0;
-    this->fineCount         = 0;
-    this->finerCount        = 0;
-    this->finestCount       = 0;
-    this->infoCount         = 0;
-    this->offCount          = 0;
-    this->severeCount       = 0;
-    this->stackTraceCount   = 0;
-    this->traceCount        = 0;
-    this->unknownCount      = 0;
-    this->warningCount      = 0; 
-    this->initFileNames ();
-
+javaLogParser::javaLogParser ()/*: m_thread(&javaLogParser::initParser,this) */{
+    this->pStart = time(nullptr);       // Metrics for Efficiency; 
 }
 
 javaLogParser::~javaLogParser () {
-    if(m_thread.joinable()){
+    //this->threadLock.store(memory_order_release);
+    /*if(m_thread.joinable()){
         m_thread.join();
-    }
+    }*/
     this->fh.close ();
 }
 
 javaLogParser& javaLogParser::operator +=(javaLogParser const &source) {
     // Set filename to `aggregate + _{stat,ule,ulste} + .log`;
+    //this->threadLock.load(memory_order_acquire);
     this->lineCount         += source.lineCount;
     this->allCount          += source.allCount;
-    debugCount              += source.debugCount;
+    this->debugCount        += source.debugCount;
     this->errorCount        += source.errorCount;
     this->exceptionCount    += source.exceptionCount;
     this->fatalCount        += source.fatalCount;
@@ -230,6 +232,7 @@ javaLogParser& javaLogParser::operator +=(javaLogParser const &source) {
     this->unknownEntries.insert(source.unknownEntries.begin(), source.unknownEntries.end());
     this->warningEntries.insert(source.warningEntries.begin(), source.warningEntries.end());
 
+    //this->threadLock.load(memory_order_release);
     return *this;
 }
 
@@ -250,7 +253,7 @@ void javaLogParser::addCounterMetrics (string logLevel) {
             this->allCount++;
             this->allEntries[ln]++;
             break;
-        case DEBUG:
+        case DBG:
             debugCount++;
             debugEntries[ln]++;
             break;
@@ -317,7 +320,7 @@ void javaLogParser::addStackItem (string line) {
 
 void javaLogParser::dumpElements () {
     for ( long unsigned int i=0; i< this->logEntries.size(); i++) {
-        logEntries[i].dumpElements ();
+        logEntries[i]->dumpElements ();
     }
 
     // Order the unordered_maps; 
@@ -409,16 +412,12 @@ vector<string> javaLogParser::generateStats () {
 
 javaLogEntry* javaLogParser::getCurrentLogEntry() {
     size_t sz = this->logEntries.size() - 1;
-    return &this->logEntries[sz];
+    return this->logEntries[sz];
 }
-
-vector<javaLogEntry> javaLogParser::getElements() const {
-    return this->logEntries; 
-}; 
 
 javaLogParser::logLevelType javaLogParser::hashit (string const& inString) {
     if (inString == "ALL") return ALL;
-    else if (inString == "DEBUG") return DEBUG; 
+    else if (inString == "DBG") return DBG; 
     else if (inString == "ERROR" || inString == "ERR") return ERROR; 
     else if (inString == "FATAL") return FATAL; 
     else if (inString == "FINE") return FINE; 
@@ -512,11 +511,12 @@ bool javaLogParser::hasException () {
 }
 
 bool javaLogParser::joinable () {
-    return this->m_thread.joinable();
+    //return this->m_thread.joinable();
+    return true;
 }
 
 void javaLogParser::join () {
-    this->m_thread.join ();
+    //this->m_thread.join ();
 }
 
 multimap<int, string> javaLogParser::orderMap (unordered_map<string, int>& sourceMap) {
@@ -540,7 +540,7 @@ void javaLogParser::printStats () {
 void javaLogParser::processFile() {
     this->fh = ifstream(this->fileName); // streams don't use exceptions by default; 
     if (!this->fh) {
-        string header = string("Error in File: " + this->fileName + strerror(errno)); 
+        string header = string("Error in File: '" + this->fileName + "'" + strerror(errno)); 
         cout << "DEBUG: " << this->header(header) << endl; 
     }
 
@@ -552,7 +552,7 @@ void javaLogParser::processFile() {
         
         if (!this->isStackTrace()) {
             this->date = this->firstWord;
-            javaLogEntry logEntry = this->processLine();
+            javaLogEntry* logEntry = this->processLine();
             this->logEntries.push_back(logEntry); 
             this->ss >> this->timestamp >> this->id >> this->logLevel; 
             getline(this->ss, this->message);  // Get remaining line entries as one object; 
@@ -569,9 +569,9 @@ void javaLogParser::processFile() {
             //if (javaLogParser::getDebug ()) { cout << "DEBUG: Stack Trace before unordered map: cst: " << this->logEntries[sz - 1].containsStackTrace << endl; }
 
             if (sz > 0) {
-                if (this->logEntries[sz - 1].containsStackTrace == 1) {
-                    if (!logEntries[sz - 1].getLines ()->empty ()) {
-                        this->stackTraceEntries[*logEntries[sz - 1].jstPtr]++; 
+                if (this->logEntries[sz - 1]->containsStackTrace == 1) {
+                    if (!logEntries[sz - 1]->getLines ()->empty ()) {
+                        this->stackTraceEntries[*logEntries[sz - 1]->jstPtr]++; 
                     }
                 }
             }
@@ -588,12 +588,12 @@ void javaLogParser::processFile() {
     if(javaLogParser::getDebug ()) { cout << "DEBUG: Processed File" << endl; }
 }
 
-javaLogEntry javaLogParser::processLine() {
+javaLogEntry* javaLogParser::processLine() {
     if(!this->isStackTrace ()) {
         //cout << "Initial Log Entry - Not a Stack Trace:" << line << endl;
         javaLogEntry logEntry (this->line);
         this->lineCount++;
-        return logEntry;
+        return &logEntry;
     } 
     else {
         this->lineCount++;
@@ -604,14 +604,14 @@ javaLogEntry javaLogParser::processLine() {
         if(sz == 0) {
             javaLogEntry logEntry (line);
             logEntry.containsStackTrace = true;
-            return logEntry;
+            return &logEntry;
         } else {
-            javaLogEntry* jle = &this->logEntries[sz -1];
+            javaLogEntry* jle = this->logEntries[sz -1];
             jle->containsStackTrace = true; 
             //javaLogEntry logEntry (this->logEntries[sz - 1]);  // -1 is important, causes core dump cuase itr is past last entry of vector; 
             jle->push_back(line);
 
-            return *jle;
+            return jle;
         }
     }
 }

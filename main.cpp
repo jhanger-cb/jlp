@@ -53,6 +53,10 @@ regex javaLogParser::reDate = regex("^[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]
 regex javaLogParser::reException = regex("Exception");
 
 
+void threadStartup(javaLogParser* mc, string fn)
+{
+    mc->initParser (fn);
+}
 
 int main(int argc, char * argv[])
 {
@@ -171,22 +175,29 @@ int main(int argc, char * argv[])
     //      So far, should retain 1:1 <javaLogParser>:<file> mapping; 
     //      Solution: do both; Aggregate summary <javaLogParser1> + <javaLogParser2> => stats sums both;
     //          - serialize aggregates both to a summary file; 
-    vector<javaLogParser> vlogParsers;
+    vector<thread> jlpThreads;
+    vector<javaLogParser*> vlogParsers;
+
     if (javaLogParser::getDebug ()) { cout << "DEBUG: init log parsers vector & threads; Filename count: " << fileNames.size() << endl; }
+    
     // Iterate through Filenames; 
     for (auto x : fileNames) {
         for (auto y: x) {
             filename = y;
             if (javaLogParser::getDebug ()) { cout << "DEBUG:\n\tx: " << x.size () << "\n\tj: " << y.size() << "\n\tfilename: " << filename << "\n\tAggregation is: " << javaLogParser::getAggregate () << "\n\tDebug is " << javaLogParser::getDebug () << endl; }
             if (javaLogParser::getDebug ()) { cout << "DEBUG: jlp created; pushing on stack;" << endl; }
-            vlogParsers.push_back(javaLogParser(filename));
+
+            //vlogParsers.push_back(javaLogParser(filename));
+            javaLogParser jlp(filename); 
+            jlpThreads.push_back(std::thread(threadStartup, &jlp, filename));
+
             if (javaLogParser::getDebug ()) { cout << "DEBUG: jlp pushed" << endl; }
         }
     }
 
-    for (auto y : vlogParsers) {
-        if(y.joinable()) {
-            y.join (); 
+    for (thread &t : jlpThreads) {
+        if(t.joinable()) {
+            t.join (); 
         }
     }
 
@@ -209,9 +220,9 @@ int main(int argc, char * argv[])
         if (javaLogParser::getAggregate ()) {    
             if (javaLogParser::getDebug ()) { cout << "DEBUG: Aggregate selected, adding objects: vlog: " << vlogParsers.size () << endl; }
             if (sz == 1) { 
-                    javaLogParser aggregateParser(x);
+                    javaLogParser aggregateParser(*x);
             } else { 
-                aggregateParser += x; 
+                aggregateParser += *x; 
             }
         }
         else {
@@ -224,9 +235,9 @@ int main(int argc, char * argv[])
                 cout << "\t\tStats: " << javaLogParser::getStats () << endl;
             }
 
-            if (javaLogParser::getDump ()) { x.dumpElements (); } 
-            if (javaLogParser::getSerialize ()) { x.serializeData (); }
-            if (javaLogParser::getStats ()) { x.printStats (); }
+            if (javaLogParser::getDump ()) { x->dumpElements (); } 
+            if (javaLogParser::getSerialize ()) { x->serializeData (); }
+            if (javaLogParser::getStats ()) { x->printStats (); }
         }
         y++;
     }

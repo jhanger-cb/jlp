@@ -12,6 +12,7 @@ javaStackTrace::javaStackTrace (string ln) {
     this->lineItems.push_back(ln);
 }
 
+
 javaStackTrace::javaStackTrace (javaStackTrace const &jst) {
     this->headLine              = jst.headLine;
     for ( auto x : jst.lineItems) {
@@ -22,6 +23,7 @@ javaStackTrace::javaStackTrace (javaStackTrace const &jst) {
     this->exceptionMsg          = jst.exceptionMsg;
     this->exceptionMsgDetails   = jst.exceptionMsgDetails;
 }
+
 
 void javaStackTrace::dumpElements () {
     for ( auto x : lineItems) {

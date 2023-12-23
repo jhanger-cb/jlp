@@ -7,8 +7,8 @@ file(REMOVE_RECURSE
   "CMakeFiles/jlp.dir/javaStackTrace.cpp.o.d"
   "CMakeFiles/jlp.dir/main.cpp.o"
   "CMakeFiles/jlp.dir/main.cpp.o.d"
-  "bin/jlp"
-  "bin/jlp.pdb"
+  "jlp"
+  "jlp.pdb"
 )
 
 # Per-language clean rules from dependency scanning.
