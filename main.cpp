@@ -50,6 +50,8 @@ bool javaLogParser::stats;
 string javaLogParser::filters;
 regex javaLogParser::re = regex("^[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]");
 
+void threadStartup(javaLogParser* jlp)
+{ }
 
 
 int main(int argc, char * argv[])
@@ -168,6 +170,8 @@ int main(int argc, char * argv[])
     //      Solution: do both; Aggregate summary <javaLogParser1> + <javaLogParser2> => stats sums both;
     //          - serialize aggregates both to a summary file; 
     vector<javaLogParser> vlogParsers;
+    vector<thread> jlpThreads;
+
     if (javaLogParser::getDebug ()) { cout << "DEBUG: init log parsers vector" << endl; }
 
     // Iterate through Filenames; 
@@ -177,11 +181,19 @@ int main(int argc, char * argv[])
 
             if (javaLogParser::getDebug ()) { cout << "DEBUG:\n\tx: " << x.size () << "\n\tj: " << y.size() << "\n\tfilename: " << filename << "\n\tAggregation is: " << javaLogParser::getAggregate () << "\n\tDebug is " << javaLogParser::getDebug () << endl; }
             vlogParsers.push_back (javaLogParser(filename));
+            jlpThreads.push_back(thread(threadStartup, &vlogParsers.front()));
             if (javaLogParser::getDebug ()) { cout << "DEBUG: jlp created; pushing on stack;" << endl; }
             //vlogParsers.push_back (jlp);
             if (javaLogParser::getDebug ()) { cout << "DEBUG: jlp pushed" << endl; }
         }
     }
+
+    for (thread &t : jlpThreads) {
+        if (t.joinable()){
+        t.join();
+        }
+    }
+
 
     if(javaLogParser::getDebug ()) { cout << "DEBUG: vlogParsers populated: " << vlogParsers.size() << endl; }
     // Override Aggregates Setting if more than one file presented to -i or positionally on cli; 
