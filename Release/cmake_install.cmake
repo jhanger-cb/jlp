@@ -1,4 +1,4 @@
-# Install script for directory: /home/joel/src/cpp/jlp
+# Install script for directory: /cbsupport/src/cpp/jlp
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
@@ -50,5 +50,5 @@ endif()
 
 string(REPLACE ";" "\n" CMAKE_INSTALL_MANIFEST_CONTENT
        "${CMAKE_INSTALL_MANIFEST_FILES}")
-file(WRITE "/home/joel/src/cpp/jlp/Release/${CMAKE_INSTALL_MANIFEST}"
+file(WRITE "/cbsupport/src/cpp/jlp/Release/${CMAKE_INSTALL_MANIFEST}"
      "${CMAKE_INSTALL_MANIFEST_CONTENT}")
