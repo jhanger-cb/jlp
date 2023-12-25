@@ -5,10 +5,14 @@
             "name": "(gdb) Launch",
             "type": "cppdbg",
             "request": "launch",
-            "program": "/cbsupport/src/cpp/jlp/bin/jlp",
+            //"program": "/cbsupport/src/cpp/jlp/Debug/bin/jlp",
+            "program": "/home/joel/bin/jlp"
             "args": [
                 "-sp",
-                "test_data/stack_trace_dups.log"
+                "/cbsupport/src/cpp/jlp/test_data/jenkins.log",
+                "/cbsupport/src/cpp/jlp/test_data/jenkins.log.bak1",
+                "/cbsupport/src/cpp/jlp/test_data/jenkins.log.bak2",
+                "/cbsupport/src/cpp/jlp/test_data/jenkins.log.all"
             ],
             "stopAtEntry": false,
             "cwd": "${fileDirname}",

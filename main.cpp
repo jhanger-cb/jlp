@@ -50,12 +50,15 @@ bool javaLogParser::stats;
 string javaLogParser::filters;
 regex javaLogParser::re = regex("^[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]");
 
-void threadStartup(javaLogParser* jlp)
-{ }
+void threadStartup(vector<javaLogParser>* jlp, string fn) { 
+    jlp->push_back(javaLogParser(fn));
+    if(javaLogParser::getDebug()){ cout << "Started Thread for Filename: " << fn << endl; }
+}
 
 
 int main(int argc, char * argv[])
 {
+    time_t tsStart = time(nullptr); 
     char const *log_folder = "./logs/";
     mkdir(log_folder, 0755); 
 
@@ -171,6 +174,7 @@ int main(int argc, char * argv[])
     //          - serialize aggregates both to a summary file; 
     vector<javaLogParser> vlogParsers;
     vector<thread> jlpThreads;
+    vector<javaLogParser>* parsersPtr = &vlogParsers;
 
     if (javaLogParser::getDebug ()) { cout << "DEBUG: init log parsers vector" << endl; }
 
@@ -180,8 +184,8 @@ int main(int argc, char * argv[])
             filename = y;
 
             if (javaLogParser::getDebug ()) { cout << "DEBUG:\n\tx: " << x.size () << "\n\tj: " << y.size() << "\n\tfilename: " << filename << "\n\tAggregation is: " << javaLogParser::getAggregate () << "\n\tDebug is " << javaLogParser::getDebug () << endl; }
-            vlogParsers.push_back (javaLogParser(filename));
-            jlpThreads.push_back(thread(threadStartup, &vlogParsers.front()));
+            //vlogParsers.push_back (javaLogParser(filename));
+            jlpThreads.push_back(thread(threadStartup, /*&vlogParsers*/parsersPtr, filename));
             if (javaLogParser::getDebug ()) { cout << "DEBUG: jlp created; pushing on stack;" << endl; }
             //vlogParsers.push_back (jlp);
             if (javaLogParser::getDebug ()) { cout << "DEBUG: jlp pushed" << endl; }
@@ -190,10 +194,9 @@ int main(int argc, char * argv[])
 
     for (thread &t : jlpThreads) {
         if (t.joinable()){
-        t.join();
+            t.join();
         }
     }
-
 
     if(javaLogParser::getDebug ()) { cout << "DEBUG: vlogParsers populated: " << vlogParsers.size() << endl; }
     // Override Aggregates Setting if more than one file presented to -i or positionally on cli; 
@@ -243,4 +246,6 @@ int main(int argc, char * argv[])
             if (javaLogParser::getSerialize ()) { aggregateParser.serializeData (); }
             if (javaLogParser::getStats ()) { aggregateParser.printStats (); }
     }
+    time_t tsEnd = time(nullptr);
+    cout << "bmTime: " << tsEnd - tsStart << "s" << endl;
 }
