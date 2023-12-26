@@ -1,0 +1,42 @@
+# [jlp - C++ based log parser for Java Logs](https://github.com/tacitness/jlp#jlp---c-based-log-parser-for-java-logs)
+
+# [Releases:](https://github.com/jhanger-cb/jlp#releases)
+
+- v0.1 - First Stable Release - 10/19/2023
+- v0.2.0 - Refactored Code Base - Stack Trace Aggregation - 10/20/2023
+- v0.3.0 - Regex compilation order changed to improve performance - previous capped at 250 lines per second, now pushing over 15k lines per second parsed - 10/30/2023
+- v0.4.0 - Multi-Threaded Implementation, per file threading implementation; 
+
+## [Java Log Parser (jlp)](https://github.com/jhanger-cb/jlp#java-log-parser-jlp)
+
+### [By Default starting with Jenkins typical Log File Formats as this is what this solution stems from:](https://github.com/jhanger-cb/jlp#by-default-starting-with-jenkins-typical-log-file-formats-as-this-is-what-this-solution-stems-from)
+
+- Need to parse and objectify Java Logs from a JVM, Log4J is used in Jenkins;
+- Thus this will default compatible with that typical and most commonly used logging format;
+- TODO: Set a Logging format for CD/RO;
+
+### [TODOs:](https://github.com/jhanger-cb/jlp#todos)
+
+- Configure a Log parsing format for <Insert Log Format Here> 
+  - Expand the logger types supported, from just Java, make a more broad `ulp` -> the Universal Log Parser;
+- Enhance Multi-Threading:
+  - Further fragment data to scale to utilize the full spectrum of cores and hardware threads available; 
+
+### [Log Format Object:](https://github.com/jhanger-cb/jlp#log-format-object)
+
+n: date time id logLevel method \[trace|message\] (n+1): if first field is not date, add to object; (n+end): next line, first field is date, terminate at previous point;
+
+### [Inputs:](https://github.com/jhanger-cb/jlp#inputs)
+
+filename(s)
+
+### [Outputs:](https://github.com/jhanger-cb/jlp#outputs)
+
+- stdio 
+- Log File(s)
+- *TODO*: Database Aggregation
+
+### [Methods:](https://github.com/jhanger-cb/jlp#methods)
+
+- Read Line
+- isEndOfObject (readLine(++iter))

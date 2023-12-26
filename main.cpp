@@ -49,17 +49,29 @@ bool javaLogParser::dump;
 bool javaLogParser::stats;
 string javaLogParser::filters;
 regex javaLogParser::re = regex("^[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]");
-regex javaLogParser::reDate = regex("^[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]");
-regex javaLogParser::reException = regex("Exception");
+
+// Multi-Thread Globals; 
+/* 
+From `lscpu`: 
+    Thread(s) per core:              2
+    Core(s) per socket:              6
+    processor_count == 12; Dev Machine: running Ubuntu 22.04 LTS on a Dell Precision 5500;
+    If returns 0 default to 6; a fairly safe as even modern phones coming with 6-8 cores these days; 
+*/
+    const auto processor_count = (thread::hardware_concurrency() == 0) ? 6 : thread::hardware_concurrency (); 
 
 
-void threadStartup(javaLogParser* mc, string fn)
-{
-    mc->initParser (fn);
+void threadStartup(vector<javaLogParser>* jlp, string fn) { 
+    jlp->push_back(javaLogParser(fn));
+    if(javaLogParser::getDebug()){ cout << "Started Thread for Filename: " << fn << endl; }
 }
+
 
 int main(int argc, char * argv[])
 {
+    time_t tsStart = time(nullptr); 
+    cout << "Processor Count: " << processor_count << endl; 
+
     char const *log_folder = "./logs/";
     mkdir(log_folder, 0755); 
 
@@ -175,16 +187,19 @@ int main(int argc, char * argv[])
     //      So far, should retain 1:1 <javaLogParser>:<file> mapping; 
     //      Solution: do both; Aggregate summary <javaLogParser1> + <javaLogParser2> => stats sums both;
     //          - serialize aggregates both to a summary file; 
+    vector<javaLogParser> vlogParsers;
     vector<thread> jlpThreads;
-    vector<javaLogParser*> vlogParsers;
+    vector<javaLogParser>* parsersPtr = &vlogParsers;
 
-    if (javaLogParser::getDebug ()) { cout << "DEBUG: init log parsers vector & threads; Filename count: " << fileNames.size() << endl; }
-    
+    if (javaLogParser::getDebug ()) { cout << "DEBUG: init log parsers vector" << endl; }
+
     // Iterate through Filenames; 
     for (auto x : fileNames) {
         for (auto y: x) {
             filename = y;
             if (javaLogParser::getDebug ()) { cout << "DEBUG:\n\tx: " << x.size () << "\n\tj: " << y.size() << "\n\tfilename: " << filename << "\n\tAggregation is: " << javaLogParser::getAggregate () << "\n\tDebug is " << javaLogParser::getDebug () << endl; }
+            //vlogParsers.push_back (javaLogParser(filename));
+            jlpThreads.push_back(thread(threadStartup, /*&vlogParsers*/parsersPtr, filename));
             if (javaLogParser::getDebug ()) { cout << "DEBUG: jlp created; pushing on stack;" << endl; }
 
             //vlogParsers.push_back(javaLogParser(filename));
@@ -196,8 +211,8 @@ int main(int argc, char * argv[])
     }
 
     for (thread &t : jlpThreads) {
-        if(t.joinable()) {
-            t.join (); 
+        if (t.joinable()){
+            t.join();
         }
     }
 
@@ -248,4 +263,6 @@ int main(int argc, char * argv[])
             if (javaLogParser::getSerialize ()) { aggregateParser.serializeData (); }
             if (javaLogParser::getStats ()) { aggregateParser.printStats (); }
     }
+    time_t tsEnd = time(nullptr);
+    cout << "bmTime: " << tsEnd - tsStart << "s" << endl;
 }

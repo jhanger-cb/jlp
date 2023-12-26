@@ -1,9 +1,6 @@
-cmake_minimum_required(VERSION 3.27.7)
-
-set(prjName jlp)
-
-project(${prjName}
-  VERSION 0.3.2
+cmake_minimum_required(VERSION 3.20.0)
+project(jlp 
+  VERSION 0.4.0 
   DESCRIPTION "Java Log Parser")
 
 
