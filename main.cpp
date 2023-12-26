@@ -50,6 +50,17 @@ bool javaLogParser::stats;
 string javaLogParser::filters;
 regex javaLogParser::re = regex("^[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]");
 
+// Multi-Thread Globals; 
+/* 
+From `lscpu`: 
+    Thread(s) per core:              2
+    Core(s) per socket:              6
+    processor_count == 12; Dev Machine: running Ubuntu 22.04 LTS on a Dell Precision 5500;
+    If returns 0 default to 6; a fairly safe as even modern phones coming with 6-8 cores these days; 
+*/
+    const auto processor_count = (thread::hardware_concurrency() == 0) ? 6 : thread::hardware_concurrency (); 
+
+
 void threadStartup(vector<javaLogParser>* jlp, string fn) { 
     jlp->push_back(javaLogParser(fn));
     if(javaLogParser::getDebug()){ cout << "Started Thread for Filename: " << fn << endl; }
@@ -59,6 +70,8 @@ void threadStartup(vector<javaLogParser>* jlp, string fn) {
 int main(int argc, char * argv[])
 {
     time_t tsStart = time(nullptr); 
+    cout << "Processor Count: " << processor_count << endl; 
+
     char const *log_folder = "./logs/";
     mkdir(log_folder, 0755); 
 
